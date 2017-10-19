@@ -15,9 +15,9 @@
 #include <TTree.h>
 #include <TGraph.h>
 #include <TMath.h>
+#include "Dragon.hxx"
 
 
-static const Int_t N_STRIPS     = 32;
 static const Int_t Nalpha       = 3;
 static const Int_t cut_channel  = 352; // set to relatively high channel in case ADC thresholds aren't set appropriately
 static const Int_t Max_pulser   = 12;
@@ -29,8 +29,7 @@ static const Double_t thresh_b  = 0.2;
 const Double_t alpha_E[3]    = {5.15659,5.48556,5.80477}; // alpha energies of triple alpha source in MeV
 const Double_t dLayer        = 0.00374; // dead layer thickness (Al equivalent) in mm (from C. Wrede's thesis).
 const Double_t dLayer_grid   = 5e-8; // dead layer thickness (Si) of Tengblad design (girdded) DSSSD
-// const Double_t E_peak1[3] = {alpha_E[0]-0.023685,alpha_E[1]-0.022975,alpha_E[2]-0.021994}; //LISE 200 nm Si
-// const Double_t E_peak2[3] = {alpha_E[0]-0.0059122,alpha_E[1]-0.0057372,alpha_E[2]-0.0054921}; LISE 50 nm Si
+// const Double_t E_peak2[3] = {alpha_E[0]-0.0059122,alpha_E[1]-0.0057372,alpha_E[2]-0.0054921}; // LISE 50 nm Si
 const Double_t dEdx_Al[3]    = {139.006,133.701,129.296}; // stopping powers (MeV/mm) of alphas in Si corresponding to above energies according to SRIM 2008
 const Double_t dEdx_Si[3]    = {160.1167,154.1106,148.9053}; // stopping powers (MeV/mm) of alphas in Al corresponding to above energies according to SRIM 2008
 const Double_t E_dep[3]      = {alpha_E[0]-dEdx_Al[0]*dLayer,alpha_E[1]-dEdx_Al[1]*dLayer,alpha_E[2]-dEdx_Al[2]*dLayer};
@@ -160,14 +159,14 @@ Double_t *alpha(const char *fname, Int_t strip, Double_t offset, Double_t sigma,
 
 }
 
-void dsssdcal(const char *f1, const char *f2){
+void dsssdcal(const char *f1, const char *f2, Bool_t odb = kTRUE, Bool_t xml = kTRUE){
 
-    Double_t offset[N_STRIPS];
-    Double_t gain[N_STRIPS];
-    Double_t intercept[N_STRIPS];
+    Double_t offset[dragon:Dsssd:MAX_CHANNELS];
+    Double_t gain[dragon:Dsssd:MAX_CHANNELS];
+    Double_t intercept[dragon:Dsssd:MAX_CHANNELS];
 
     // Get offsets and energy calibration parameters
-    for (Int_t i = 0; i < N_STRIPS; i++){
+    for (Int_t i = 0; i < dragon:Dsssd:MAX_CHANNELS; i++){
         if(i < 16) {
             offset[i]     = pulser(f1, i, sigma_f, thresh_f);
             Double_t *par = alpha(f2, i, offset[i], sigma_f, thresh_f);
@@ -181,27 +180,31 @@ void dsssdcal(const char *f1, const char *f2){
         delete[] par;
     }
 
-    // Write slopes and offsets to odb
-    for(Int_t i=0; i< N_STRIPS; ++i) {
-        gSystem->Exec(Form("odbedit -c \"set /dragon/dsssd/variables/adc/slope[%d] %.6g\"\n", i, gain[i]));
-        gSystem->Exec(Form("odbedit -c \"set /dragon/dsssd/variables/adc/offset[%d] %.6g\"\n", i,intercept[i]-offset[i]*gain[i]));
+    if(odb){
+        // Write slopes and offsets to odb
+        for(Int_t i=0; i< dragon:Dsssd:MAX_CHANNELS; ++i) {
+            gSystem->Exec(Form("odbedit -c \"set /dragon/dsssd/variables/adc/slope[%d] %.6g\"\n", i, gain[i]));
+            gSystem->Exec(Form("odbedit -c \"set /dragon/dsssd/variables/adc/offset[%d] %.6g\"\n", i,intercept[i]-offset[i]*gain[i]));
+        }
+        cout << "ATTENTION: Gains and offsets written to odb!\n";
     }
-    cout << "ATTENTION: Gains and offsets written to odb!\n";
 
+    if(xml){
     // Save current odb state to xml file
     gSystem->Exec("odbedit -d /dragon/dsssd/variables/adc -c 'save -x dsssdcal.xml'"); // save calibration as xml file in pwd
     gSystem->Exec("if [ ! -d $DH/../calibration ]; then mkdir -p $DH/../calibration; fi");
     gSystem->Exec("mv -f ./dsssdcal.xml ${DH}/../calibration"); // move xml file to $DH/../calibration/
     cout << "ATTENTION: Current odb state saved to dsssd.xml in ${DH}/../calibration.\n";
+    }
 
     // Fill calibrated summary spectrum
     // TCanvas *c2=new TCanvas();
-    TH2F *dsssd_cal = new TH2F("dsssd_cal","Calibrated DSSSD Spectrum",N_STRIPS,0,N_STRIPS,4096,0,20);
+    TH2F *dsssd_cal = new TH2F("dsssd_cal","Calibrated DSSSD Spectrum",dragon:Dsssd:MAX_CHANNELS,0,dragon:Dsssd:MAX_CHANNELS,4096,0,20);
     dragon::Tail* ptail = new dragon::Tail();
     t3->SetBranchAddress("tail", &ptail);
     for(Long_t evt = 0; evt < t3->GetEntries(); evt++) {
         t3->GetEntry(evt);
-        for(Int_t i=0; i<N_STRIPS; i++){
+        for(Int_t i=0; i<dragon:Dsssd:MAX_CHANNELS; i++){
             Double_t val = (ptail->dsssd.ecal[i]-offset[i])*gain[i]+intercept[i];
             if(val<1.5) continue;
             dsssd_cal->Fill(i,val);
@@ -211,7 +214,7 @@ void dsssdcal(const char *f1, const char *f2){
     t3->ResetBranchAddresses();
     delete ptail;
 
-    TH2F *h0=new TH2F("h0","Uncalibrated DSSSD Spectrum",N_STRIPS,0,N_STRIPS,4096,0,4095);
+    TH2F *h0=new TH2F("h0","Uncalibrated DSSSD Spectrum",dragon:Dsssd:MAX_CHANNELS,0,dragon:Dsssd:MAX_CHANNELS,4096,0,4095);
     TH1F *h2=new TH1F("h2","Uncalibrated DSSSD Energy (Front)",4096,0,4095);
     TH1F *h3=new TH1F("h3","Uncalibrated DSSSD Energy (Back)",4096,0,4095);
 

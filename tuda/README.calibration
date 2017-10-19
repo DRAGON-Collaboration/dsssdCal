@@ -1,0 +1,932 @@
+Input Data
+__________
+
+The following data are required:
+
+1) mixed alpha source  
+2) BNC PB-4 pulser walkthrough 
+	+ polarity to p+n junction strips
+3) BNC PB-4 pulser walkthrough 
+	- polarity to n+n ohmic strips (if required)
+
+This data should be written to disk. Several runs of each type *may*
+be required depending on the source-detector geometry, BNC PB-4 loading,
+RAL109 shaping amplifier/discriminator module gain settings etc.
+
+For the pulser walkthrough, the BNC PB-4 pulser amplitude and attenuators
+should be set such that an amplitude of 90,000 corresponds to peak 
+centroids at ~50-90% ADC FSR. The BNC PB-4 amplitude settings should
+then be varied from 90,000 to 10,000 with a step size of 10,000. The 
+calibration data analysis software assumes that the pulser walkthrough 
+will provide a sequence of peaks (minimum 3, maximum 9) in the pulse
+height ratio 1:2:3: ... :7:8:9
+
+For the mixed alpha source data, the calibration data analysis software
+assumes that three peaks will be identified corresponding to the most
+intense alpha peaks of 239Pu, 241Am and 243Cm.
+
+When the required data has been obtained, it should be sorted using 
+the skeleton sort program sort/sort.f and MIDASsort. The skeleton 
+sort program will create one spectrum per ADC channel (e.g. s0, s1
+... etc). 
+
+The skeleton sort program can be modified to apply a multiplicity
+condition to accept alpha/reject pulser or reject alpha/accept pulser
+events. 
+
+The spectra should be saved to disk directories, e.g. spectra/run1,
+spectra/run2 etc. It is these directories which form the input data
+for the calibration data analysis software.
+ 
+peakfind
+________
+
+The MIDAS program peakfind is used by the calibration data analysis
+software to obtain peak centroids from the spectra. The program is
+invoked using five arguments: spectrum filename, limit (low), limit
+(high), fwhm and acceptance.
+
+The limits (low/high) specify the spectrum channel range within which
+to search for peaks - use values 100<limit<3840.
+
+fwhm specifies the expected FWHM (channels) of the spectrum peak(s).
+If the actual peak width is less than, or equal to, fwhm then the peak 
+centroid will be reported. If the actual peak width is greater than fwhm 
+then the peak centroid will not be reported. A particular feature of 
+peakfind is that it always reports FWHMs which are close to the value 
+specified rather than their actual FWHM - FWHMs reported should therefore 
+be treated with caution.
+
+acceptance specifies the maximum statistical error (%) of the area of
+any peak reported 
+
+ADC offsets
+___________
+
+ADC offsets are calculated by invoking the script offsets
+
+	offsets directory limit(low) limit(high) fwhm acceptance
+
+For example,
+
+offsets ~/S1287/spectra/run2 100 3840 5 5
+
+specifies spectrum directory (/home/tuda/S1287/spectra/run2), limits
+(channels 100-3840), peak width (5 ch FWHM) and acceptance (5%).
+This produces terminal output of the type:
+
+spectrum:  /home/tuda/S1287/spectra/run2/s0
+s0          430.87     8.49   0.057                                 
+spectrum:  /home/tuda/S1287/spectra/run2/s1
+s1          428.30    10.13   0.060                                 
+spectrum:  /home/tuda/S1287/spectra/run2/s10
+s10         425.06    11.87   0.053                                 
+spectrum:  /home/tuda/S1287/spectra/run2/s100
+s100        420.08    18.26   0.075 
+	:
+	:
+	etc
+
+Copy the output data file (/tmp/offsets.dat) to the calibration directory.
+For example,
+
+cp /tmp/offsets.dat ~/S1287/calibration
+
+The output data file contains a channel-ordered list of ADC offset,
+ADC offset error, integral non-linearity (INL) and the number of peaks
+detected. For example,
+
+     ADC   Offset   Offset   INL     #  Error message 
+                    error          peaks     
+             (ch)     (ch)   (%)
+
+       0     8.49     0.02   0.057   8                                 
+       1    10.13     0.03   0.060   8                                 
+       2    10.40     0.02   0.066   8                                 
+       3     8.87     0.02   0.031   7                                 
+       4    12.95     0.02   0.046   8                                 
+       5     8.25     0.02   0.028   7                                 
+       6    10.72     0.02   0.045   8                                 
+       7    10.68     0.02   0.101   8  INL > 0.1%                     
+       8    10.11     0.02   0.052   8                                 
+       9    10.37     0.02   0.046   8                                 
+      10    11.87     0.02   0.053   8                                 
+      11    12.47     0.02   0.053   8                                 
+      12    15.15     0.02   0.066   8                                 
+      13    12.64     0.02   0.065   8                                 
+      14    11.77     0.03   0.063   8                                 
+      15    12.23     0.02   0.067   8                                 
+      16    11.06     0.02   0.037   7                                 
+      17    13.45     0.02   0.100   8  INL > 0.1%                     
+      18    13.53     0.02   0.084   8                                 
+      19    11.11     0.02   0.064   8                                 
+      20    10.99     0.02   0.055   8                                 
+      21    11.37     0.02   0.053   8                                 
+      22    14.23     0.02   0.087   8                                 
+      23    14.32     0.01   0.112   9  INL > 0.1%                     
+      24    10.67     0.02   0.081   8                                 
+      25     8.94     0.02   0.061   7                                 
+      26    10.90     0.02   0.085   8                                 
+      27    12.35     0.02   0.081   8                                 
+      28    12.58     0.02   0.122   8  INL > 0.1%                     
+      29    12.07     0.02   0.094   8                                 
+      30    10.41     0.02   0.094   8                                 
+      31    10.30     0.02   0.096   8                                 
+      32     6.24     0.02   0.039   7                                 
+      33    11.89     0.02   0.075   8                                 
+      34    11.60     0.02   0.086   8                                 
+      35     9.83     0.02   0.046   7                                 
+      36     9.11     0.02   0.030   7                                 
+      37    11.21     0.02   0.078   8                                 
+      38    10.38     0.02   0.074   8                                 
+      39    10.81     0.02   0.067   8                                 
+      40   -32.08     0.02   0.048   8                                 
+      41   -32.38     0.02   0.067   8                                 
+      42   -32.29     0.02   0.036   8                                 
+      43   -32.21     0.02   0.042   8                                 
+      44   -33.87     0.02   0.038   8                                 
+      45   -31.81     0.02   0.052   8                                 
+      46   -31.01     0.02   0.070   8                                 
+      47   -33.43     0.02   0.022   8                                 
+      48 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      49 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      50 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      51 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      52 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      53 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      54 -9999.99     0.00   0.000   1  < 3 peaks                      
+      55 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      56 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      57 -9999.99     0.00   0.000   1  < 3 peaks                      
+      58 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      59 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      60 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      61 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      62 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      63 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+      64     2.45     0.02   0.041   7                                 
+      65     6.62     0.02   0.100   8                                 
+      66     2.87     0.02   0.035   7                                 
+      67     3.44     0.02   0.055   7                                 
+      68     4.00     0.02   0.044   7                                 
+      69     5.47     0.02   0.045   7                                 
+      70     3.58     0.02   0.046   7                                 
+      71     3.47     0.02   0.035   7                                 
+      72   -46.84     0.02   0.097   8                                 
+      73   -46.90     0.02   0.081   8                                 
+      74   -47.12     0.02   0.047   7                                 
+      75   -45.36     0.02   0.111   8  INL > 0.1%                     
+      76   -48.63     0.02   0.038   7                                 
+      77   -48.14     0.02   0.045   7                                 
+      78    56.47     0.01   0.194   8  INL > 0.1%                     
+      79   -48.04     0.02   0.031   7                                 
+      80   -43.27     0.02   0.059   7                                 
+      81   -42.00     0.02   0.078   7                                 
+      82   -38.84     0.02   0.098   8                                 
+      83   -43.30     0.02   0.053   7                                 
+      84   -41.05     0.02   0.143   8  INL > 0.1%                     
+      85   -43.40     0.02   0.062   7                                 
+      86   -41.67     0.02   0.051   7                                 
+      87   -43.64     0.02   0.043   7                                 
+      88   -41.17     0.02   0.052   7                                 
+      89   -39.23     0.01   0.095   8                                 
+      90   -39.68     0.02   0.104   8  INL > 0.1%                     
+      91   -35.35     0.01   0.161   9  INL > 0.1%                     
+      92   -40.59     0.01   0.075   8                                 
+      93   -38.78     0.02   0.073   7                                 
+      94   -39.02     0.01   0.102   8  INL > 0.1%                     
+      95   -41.51     0.02   0.053   7                                 
+      96    15.43     0.02   0.058   8                                 
+      97    19.09     0.02   0.074   8                                 
+      98    17.10     0.02   0.072   8                                 
+      99    16.88     0.01   0.067   8                                 
+     100    18.26     0.02   0.075   8                                 
+     101    17.61     0.02   0.076   8                                 
+     102    19.20     0.02   0.093   8                                 
+     103    18.18     0.02   0.068   8                                 
+     104    18.65     0.01   0.020   8                                 
+     105    21.09     0.02   0.015   8                                 
+     106    21.15     0.02   0.022   8                                 
+     107    19.04     0.02   0.024   8                                 
+     108    16.89     0.02   0.016   8                                 
+     109    16.18     0.02   0.018   7                                 
+     110    16.42     0.02   0.046   8                                 
+     111    18.76     0.02   0.018   8                                 
+     112 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     113 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     114 -9999.99     0.00   0.000   1  < 3 peaks                      
+     115 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     116 -9999.99     0.00   0.000   2  < 3 peaks                      
+     117 -9999.99     0.00   0.000   1  < 3 peaks                      
+     118   106.56     0.02   2.727   7  INL > 0.1%                     
+     119   113.06     0.02   0.281   6  INL > 0.1%                     
+     120 -9999.99     0.00   0.000   1  < 3 peaks                      
+     121 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     122 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     123 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     124 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     125 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     126 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     127 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     128     0.98     0.02   0.016   7                                 
+     129     1.18     0.02   0.029   7                                 
+     130     0.15     0.02   0.022   7                                 
+     131     6.03     0.02   0.053   8                                 
+     132     2.95     0.02   0.024   7                                 
+     133     3.11     0.02   0.052   8                                 
+     134     2.19     0.02   0.031   7                                 
+     135     3.01     0.02   0.033   7                                 
+     136     2.66     0.02   0.047   7                                 
+     137     2.70     0.02   0.024   7                                 
+     138     4.24     0.02   0.035   7                                 
+     139     2.75     0.02   0.027   7                                 
+     140     3.07     0.02   0.038   7                                 
+     141     5.84     0.02   0.058   8                                 
+     142     2.52     0.02   0.057   7                                 
+     143     0.29     0.02   0.030   7                                 
+     144     5.96     0.02   0.037   7                                 
+     145     3.26     0.02   0.031   7                                 
+     146     8.13     0.02   0.068   7                                 
+     147     5.73     0.02   0.048   7                                 
+     148     6.96     0.02   0.031   7                                 
+     149     6.82     0.02   0.041   7                                 
+     150     9.91     0.02   0.105   8  INL > 0.1%                     
+     151     3.59     0.02   0.074   8                                 
+     152    10.17     0.02   0.097   8                                 
+     153     6.73     0.02   0.083   8                                 
+     154     3.63     0.02   0.061   7                                 
+     155     7.81     0.02   0.049   7                                 
+     156     5.98     0.02   0.038   7                                 
+     157     6.98     0.02   0.048   7                                 
+     158     5.13     0.02   0.094   8                                 
+     159     8.57     0.02   0.082   8                                 
+     160    -2.43     0.02   0.029   7                                 
+     161     3.65     0.02   0.025   7                                 
+     162     3.00     0.02   0.032   7                                 
+     163     2.98     0.02   0.037   7                                 
+     164     1.00     0.02   0.033   7                                 
+     165     1.29     0.02   0.022   7                                 
+     166     1.86     0.02   0.042   8                                 
+     167     1.98     0.02   0.046   7                                 
+     168     4.66     0.02   0.068   7                                 
+     169     3.16     0.02   0.075   7                                 
+     170     3.34     0.02   0.072   7                                 
+     171     4.85     0.02   0.039   7                                 
+     172     3.04     0.02   0.049   7                                 
+     173     2.14     0.02   0.062   7                                 
+     174     2.41     0.02   0.047   7                                 
+     175     2.72     0.02   0.038   7                                 
+     176 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     177 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     178 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     179 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     180 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     181 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     182 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     183 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     184 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     185 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     186 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     187 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     188 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     189 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     190 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+     191 -9999.99     0.00   0.000  46  > 9 peaks or no data           
+
+Typical errors are:
+
+INL > 0.1%
+
+The least squares fit to the peak centroids indicates a larger than
+expected INL. This may indicate that peakfind has identified the
+wrong peaks or missed one (or more) peaks etc.
+
+> 9 peaks or no data
+
+peakfind identified either > 9 peaks, or zero peaks. This may indicate
+that peakfind has identified the wrong peaks, the search parameters are
+not appropriate or that the spectrum contains no data. 
+
+< 3 peaks
+
+peakfind identified insufficient peaks to perform the least squares fit.
+This may indicate that the search parameters are not appropriate, the
+spectrum contains insufficient peaks or the spectrum contains no data.
+
+The example data shown above was obtained for a pulser walkthrough with
+the BNC PB-4 pulser set to positive polarity. Channels 0-63 corresponded
+to an MSL type S2 DSSSD where the p+n junction strips were assigned to
+channels 0-47 and the n+n ohmic strips to channels 48-63. We would therefore
+not expect to obtain ADC offsets for channels 48-63 from this data.
+
+For other channels where problems are indicated review the log file
+(/tmp/offsets.log) and the corresponding spectrum to determine the
+cause of the problem. 
+
+ADC offsets from re-runs of the same data (with different search parameters)
+or different data (e.g. with BNC PB-4 pulser set to negative polarity
+to determine ADC offsets for n+n ohmic strips) can be *copied* from the output
+data file (/tmp/offsets.dat) and *pasted* to the saved file
+(~/S1287/calibration/offsets.dat) overwriting the corresponding previous values.
+
+When you are satisfied that as many ADC offsets as possible have been correctly
+estimated proceed to the next step of the calibration data analysis.
+
+ADC gains
+_________
+
+ADC gains are calculated by invoking the script gains
+
+	gains directory limit(low) limit(high) fwhm acceptance
+
+For example,
+
+gains ~/S1287/spectra/run1 500 1500 8 15
+
+spectrum directory (/home/tuda/S1287/spectra/run1), limits (channels 500-1500),
+peak width (8 ch FWHM) and acceptance (15%). This would produce terminal
+output of the type:
+
+spectrum:  /home/tuda/S1287/spectra/run1/s0
+    0       0.00  0.00    0.00  0.00    0.00  0.00    0.00  0.00    0.00  0.00    0.00  0.00        1  > 6 peaks or no data           
+spectrum:  /home/tuda/S1287/spectra/run1/s1
+    1       0.00  0.00    0.00  0.00    0.00  0.00    0.00  0.00    0.00  0.00    0.00  0.00        1  > 6 peaks or no data           
+spectrum:  /home/tuda/S1287/spectra/run1/s10
+    10   1016.36  0.57 1081.98  0.56 1144.62  0.71    0.00  0.00    0.00  0.00    0.00  0.00        3                                 
+spectrum:  /home/tuda/S1287/spectra/run1/s100
+    100   987.68  0.48 1006.65  0.12 1051.37  0.44 1070.89  0.12 1133.14  0.18    0.00  0.00        5  3 < peaks < 6                  
+	:
+	:
+	etc
+
+Copy the output data file (/tmp/gains.dat) to the calibration directory.
+For example,
+
+cp /tmp/gains.dat ~/S1287/calibration
+
+The output data file contains a channel-ordered list of peak centroids,
+centroid errors and the number of peaks detected. For example,
+
+     ADC       239Pu             241Am             243Cm 
+         centroid centroid centroid centroid centroid centroid                                                         #
+                     error             error             error			                                    peaks  Error message 
+             (ch)     (ch)     (ch)     (ch)     (ch)     (ch)
+
+       0     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+       1     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+       2  1126.82     0.72     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+       3     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+       4   983.98     0.49  1049.17     0.61     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+       5  1141.90     0.57     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+       6  1005.67     0.67  1070.54     0.46  1131.97     0.57     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+       7  1071.81     0.49     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+       8  1011.90     0.58  1076.25     0.48  1136.83     0.65     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+       9  1011.04     0.51  1075.98     0.48     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      10  1016.36     0.57  1081.98     0.56     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      11  1066.95     0.63  1134.18     0.57     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      12  1023.88     0.51  1089.57     0.63  1154.14     0.40     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      13  1017.67     0.54  1083.20     0.39  1144.81     0.64     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      14  1035.94     0.47     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      15  1041.01     0.69  1107.84     0.50     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      16  1077.55     0.56     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      17  1090.22     0.56     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      18  1089.69     0.59     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      19  1009.28     0.57  1075.17     0.54     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      20  1081.14     0.54     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      21  1101.53     0.59     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      22     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      23     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      24     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      25  1122.96     0.48     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      26     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      27     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      28  1037.45     0.60  1104.27     0.50     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      29  1049.93     0.63  1119.97     0.60     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      30  1032.66     0.50  1100.07     0.55     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      31  1023.07     0.57     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      32  1066.19     0.55     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      33  1014.24     0.54     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      34  1069.42     0.56  1137.41     0.61     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      35  1056.70     0.49  1125.87     0.51     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      36  1055.63     0.58  1124.74     0.48  1189.63     0.55     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      37  1029.18     0.58  1096.16     0.64     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      38  1028.26     0.56  1094.81     0.58     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      39  1083.82     0.55     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      40  1064.18     0.61  1130.19     0.62     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      41  1082.05     0.58     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      42   986.05     0.51     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      43   995.96     0.59  1063.10     0.57     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      44     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      45     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      46     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      47     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      48  1085.55     0.54  1157.72     0.50  1229.19     0.55     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      49  1090.23     0.40  1163.59     0.36  1234.89     0.46     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      50  1068.05     0.35  1141.08     0.32  1210.99     0.42     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      51  1095.82     0.28  1169.77     0.30  1241.70     0.38     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      52  1062.62     0.28  1134.90     0.33  1203.31     0.39     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      53  1067.47     0.33  1141.21     0.35  1210.19     0.44     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      54     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      55     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      56  1072.59     0.33  1143.88     0.31  1213.45     0.43     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      57  1079.06     0.33  1151.30     0.38  1221.75     0.46     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      58  1082.54     0.34  1155.54     0.30  1225.10     0.48     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      59  1054.41     0.32  1126.44     0.37  1194.51     0.53     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      60  1079.95     0.38  1152.48     0.34  1222.74     0.47     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      61  1056.87     0.34  1128.91     0.35  1197.14     0.48     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      62  1076.33     0.34  1148.59     0.34  1218.19     0.48     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      63  1178.68     0.49  1247.83     0.67     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+      64  1112.10     0.53     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  < 3 peaks                      
+      65  1031.79     0.38  1098.69     0.44  1163.89     0.61     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      66  1038.74     0.33  1105.98     0.35  1170.21     0.47     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      67  1090.28     0.24  1161.23     0.27  1229.16     0.37     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      68  1080.74     0.25  1150.59     0.22  1218.48     0.33     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      69  1078.15     0.19  1148.55     0.19  1215.66     0.28     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      70  1097.83     0.18  1169.14     0.16  1237.55     0.23     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      71  1080.05     0.16  1150.16     0.16  1217.37     0.21     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      72   960.98     0.58   982.20     0.13  1026.51     0.72  1049.19     0.15  1113.96     0.20     0.00     0.00   5  3 < peaks < 6                  
+      73   954.64     0.55   976.07     0.12  1020.15     0.51  1042.70     0.12  1083.08     0.61  1106.95     0.18   6  3 < peaks < 6                  
+      74   998.41     0.54  1019.86     0.13  1066.57     0.55  1089.42     0.13  1155.88     0.17     0.00     0.00   5  3 < peaks < 6                  
+      75   990.41     0.50  1011.39     0.12  1059.12     0.41  1080.45     0.12  1146.73     0.17     0.00     0.00   5  3 < peaks < 6                  
+      76   995.43     0.54  1015.01     0.12  1063.19     0.42  1084.34     0.11  1151.16     0.19     0.00     0.00   5  3 < peaks < 6                  
+      77  1035.45     0.16  1085.00     0.44  1105.92     0.11  1173.68     0.17     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+      78     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+      79  1054.97     0.12  1106.57     0.46  1126.94     0.13  1196.05     0.19     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+      80  1038.06     0.43  1054.05     0.12  1125.42     0.12  1194.03     0.20     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+      81  1059.01     0.12  1130.85     0.16  1199.99     0.21     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      82   963.33     0.13  1028.69     0.12  1091.81     0.20     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      83  1011.02     0.13  1079.81     0.12  1145.69     0.22     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      84  1014.98     0.14  1083.86     0.16  1150.45     0.18     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      85  1049.16     0.16  1120.62     0.16  1189.06     0.18     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      86  1040.54     0.18  1111.39     0.17  1179.47     0.24     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      87  1027.10     0.17  1097.24     0.15  1164.15     0.19     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      88  1033.01     0.23  1103.07     0.31  1170.22     0.27     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      89   948.61     0.18  1013.22     0.16  1075.17     0.21     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      90  1006.83     0.17  1075.06     0.18  1140.88     0.22     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      91   933.16     0.16   996.69     0.15  1057.22     0.21     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      92   945.45     0.16  1009.60     0.15  1071.38     0.20     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      93  1059.45     0.13  1131.15     0.13  1200.27     0.23     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      94   937.52     0.12  1001.22     0.11  1062.36     0.19     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      95  1015.08     0.12  1064.05     0.47  1083.99     0.12  1150.08     0.20     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+      96  1025.66     0.12  1091.25     0.11  1154.49     0.20     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+      97   995.14     0.12  1041.55     0.41  1059.01     0.11  1119.63     0.19     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+      98  1023.44     0.12  1069.69     0.45  1089.03     0.11  1151.79     0.15     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+      99   963.43     0.12  1006.64     0.39  1025.02     0.11  1063.26     0.50  1084.10     0.15     0.00     0.00   5  3 < peaks < 6                  
+     100   987.68     0.48  1006.65     0.12  1051.37     0.44  1070.89     0.12  1133.14     0.18     0.00     0.00   5  3 < peaks < 6                  
+     101  1004.24     0.51  1025.04     0.12  1069.73     0.59  1090.67     0.12  1131.57     0.55  1153.75     0.17   6  3 < peaks < 6                  
+     102   954.51     0.55   974.37     0.12  1015.95     0.41  1037.06     0.12  1074.03     0.61  1096.71     0.16   6  3 < peaks < 6                  
+     103   966.25     0.51   987.83     0.13  1030.09     0.54  1051.27     0.12  1111.54     0.17     0.00     0.00   5  3 < peaks < 6                  
+     104   942.97     0.77   964.17     0.14  1004.09     0.62  1026.08     0.14  1084.92     0.18     0.00     0.00   5  3 < peaks < 6                  
+     105  1011.36     0.16  1075.69     0.16  1137.19     0.20     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     106   977.02     0.16  1039.37     0.17  1098.56     0.22     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     107  1013.71     0.23  1078.38     0.21  1140.60     0.28     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     108  1044.00     0.24  1110.95     0.25  1175.99     0.38     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     109  1086.79     0.35  1155.83     0.34  1222.01     0.41     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     110   997.53     0.31  1061.65     0.34  1123.06     0.43     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     111  1018.21     0.45  1082.26     0.47     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   2  < 3 peaks                      
+     112  1029.58     0.09  1095.63     0.09  1159.44     0.12     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     113  1138.92     0.08  1212.25     0.07  1282.93     0.11     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     114   995.65     0.07  1059.55     0.07  1120.69     0.10     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     115  1038.55     0.08  1105.59     0.08  1169.96     0.10     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     116  1013.87     0.08  1079.35     0.08  1142.17     0.10     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     117  1112.90     0.09  1185.17     0.09  1254.47     0.12     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     118  1019.61     0.09  1085.29     0.09  1148.55     0.11     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     119     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+     120     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+     121  1135.26     0.10  1208.56     0.10  1278.86     0.13     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     122  1101.02     0.10  1171.92     0.09  1240.11     0.13     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     123  1101.47     0.10  1172.31     0.10  1240.41     0.13     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     124  1108.61     0.10  1180.52     0.10  1249.23     0.14     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     125  1102.92     0.10  1174.22     0.09  1242.78     0.13     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     126  1110.22     0.09  1182.16     0.09  1250.63     0.12     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     127  1082.89     0.10  1152.64     0.10  1219.65     0.13     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     128  1067.52     0.06  1098.07     0.78  1137.24     0.06  1204.20     0.07     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     129  1057.62     0.04  1098.23     0.48  1126.64     0.04  1162.54     0.69  1192.86     0.06     0.00     0.00   5  3 < peaks < 6                  
+     130  1082.90     0.04  1126.10     0.42  1153.73     0.04  1221.71     0.06     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     131   966.27     0.58   990.37     0.04  1030.47     0.26  1054.69     0.04  1089.82     0.65  1116.30     0.05   6  3 < peaks < 6                  
+     132  1074.14     0.04  1118.16     0.55  1144.22     0.04  1211.51     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     133  1009.19     0.80  1033.58     0.04  1076.25     0.29  1100.84     0.04  1165.50     0.05     0.00     0.00   5  3 < peaks < 6                  
+     134  1049.96     0.04  1094.56     0.32  1118.45     0.04  1184.13     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     135  1038.63     0.04  1082.98     0.31  1106.25     0.04  1171.21     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     136  1079.02     0.52  1102.64     0.04  1150.81     0.35  1174.47     0.04  1243.35     0.05     0.00     0.00   5  3 < peaks < 6                  
+     137  1047.14     0.04  1092.69     0.24  1115.22     0.04  1180.63     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     138  1079.29     0.04  1127.20     0.21  1149.46     0.04  1216.77     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     139  1063.09     0.04  1110.56     0.20  1132.27     0.04  1198.69     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     140  1053.12     0.04  1121.71     0.04  1187.57     0.05     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     141  1022.34     0.04  1088.65     0.04  1152.34     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     142  1106.52     0.05  1178.57     0.04  1247.77     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     143  1091.42     0.05  1162.68     0.05  1230.88     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     144  1046.25     0.05  1113.95     0.04  1178.95     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     145  1088.93     0.05  1159.90     0.05  1227.75     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     146  1068.92     0.05  1138.16     0.05  1204.69     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     147  1038.87     0.05  1106.47     0.05  1171.13     0.07     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     148  1106.52     0.05  1178.44     0.05  1247.46     0.07     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     149  1074.48     0.05  1144.36     0.05  1211.28     0.07     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     150  1040.55     0.05  1107.86     0.05  1172.58     0.07     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     151  1066.79     0.05  1136.28     0.05  1203.00     0.07     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     152   798.77     0.68   848.36     0.71  1084.82     0.08  1155.21     0.07  1222.76     0.10     0.00     0.00   5  3 < peaks < 6                  
+     153  1038.88     0.05  1106.29     0.05  1171.03     0.07     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     154  1090.77     0.05  1161.77     0.05  1229.90     0.07     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     155  1087.58     0.05  1158.22     0.05  1225.90     0.07     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     156  1057.01     0.05  1125.61     0.05  1191.41     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     157  1078.17     0.05  1148.25     0.05  1215.31     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     158  1037.53     0.05  1104.92     0.05  1169.76     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     159   947.91     0.04  1009.34     0.04  1068.07     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     160  1098.05     0.05  1169.87     0.05  1238.80     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     161  1082.59     0.05  1153.20     0.04  1220.83     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     162  1043.94     0.05  1111.94     0.04  1177.17     0.06     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     163  1082.47     0.04  1153.19     0.04  1220.93     0.05     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     164  1086.30     0.04  1135.33     0.28  1157.32     0.04  1225.35     0.06     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     165  1058.62     0.04  1106.06     0.19  1127.80     0.04  1194.10     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     166  1000.89     0.04  1066.30     0.04  1129.00     0.05     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     167  1058.72     0.04  1104.90     0.24  1127.84     0.04  1194.34     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     168  1063.02     0.58  1086.76     0.04  1134.15     0.31  1157.52     0.04  1225.61     0.05     0.00     0.00   5  3 < peaks < 6                  
+     169  1045.87     0.53  1069.66     0.04  1115.33     0.38  1139.43     0.04  1206.42     0.05     0.00     0.00   5  3 < peaks < 6                  
+     170  1103.79     0.04  1150.69     0.42  1175.86     0.04  1245.16     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     171  1074.89     0.04  1119.69     0.54  1145.09     0.04  1212.33     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     172  1079.87     0.04  1124.66     0.55  1150.41     0.04  1218.04     0.06     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     173  1056.72     0.81  1082.88     0.04  1126.59     0.40  1153.71     0.04  1221.67     0.05     0.00     0.00   5  3 < peaks < 6                  
+     174  1085.11     0.04  1127.86     0.68  1156.02     0.04  1224.00     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     175  1040.93     0.04  1081.18     0.37  1108.81     0.04  1174.14     0.05     0.00     0.00     0.00     0.00   4  3 < peaks < 6                  
+     176  1126.84     0.04  1200.54     0.03  1271.22     0.04     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     177  1162.24     0.03  1238.16     0.03  1311.09     0.04     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     178  1133.26     0.03  1207.52     0.03  1278.54     0.04     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     179  1153.64     0.03  1229.14     0.03  1301.66     0.03     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     180  1104.35     0.03  1176.94     0.03  1246.57     0.04     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     181  1135.53     0.03  1210.02     0.03  1281.39     0.04     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     182  1133.93     0.03  1208.33     0.03  1279.73     0.04     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     183     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00     0.00   1  > 6 peaks or no data           
+     184  1106.23     0.03  1178.68     0.03  1248.19     0.03     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     185  1148.84     0.02  1223.85     0.02  1295.97     0.03     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     186  1142.77     0.03  1217.87     0.03  1289.82     0.03     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     187  1143.71     0.03  1218.59     0.02  1290.66     0.03     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     188  1100.70     0.03  1173.54     0.03  1243.10     0.04     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     189  1086.53     0.03  1157.66     0.03  1225.61     0.04     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     190  1084.30     0.03  1155.39     0.03  1223.48     0.04     0.00     0.00     0.00     0.00     0.00     0.00   3                                 
+     191  1097.31     0.04  1169.30     0.04  1238.41     0.05     0.00     0.00     0.00     0.00     0.00     0.00   3  
+
+Typical errors are:
+
+3 < peaks < 6
+
+peakfind identified more than 3, but less than or equal to 6, peaks. This may
+indicate that search parameters have identified some, or all, of the lower
+energy/intensity satellite peaks.
+
+> 6 peaks or no data
+
+peakfind identified either > 6 peaks, or zero peaks. This may indicate that
+peakfind has identified the wrong peaks, the search parameters are not
+appropriate or that the spectrum contains no data. 
+
+< 3 peaks
+ 
+peakfind identified insufficient peaks. This may indicate that the search
+parameters are not appropriate (e.g. insufficient statistics).
+
+The example data shown above was obtained with a mixed alpha source (239Pu/
+241Am/243Cm) and 3x MSL type S2 detectors with 75, 21 and 6cm source-detector
+distance. The spectra for the first MSL type S2 has low statistics - a re-run
+of the gains script with different peak search parameters is therefore required.
+
+For other channels where problems are indicated, review the log file (/tmp/gains.log)
+and the corresponding spectra to determine the cause of the problem. 
+
+ADC gains from re-runs of the same data (with different search parameters) or
+different data can be *copied* from the output data file (/tmp/gains.dat) and
+*pasted* to the saved file (~/S1287/calibration/gains.dat) overwriting the
+corresponding previous values.
+
+When you are satisfied that as many ADC gains as possible have been correctly
+estimated proceed to the next step of the calibration data analysis.
+
+NAMELIST I/O Variables
+______________________
+
+The finalised versions of the offsets and gains data files should be copied
+to the /tmp directory
+
+cp ~/S1287/calibration/offsets.dat /tmp
+cp ~/S1287/calibration/gains.dat /tmp
+
+The program variables should be executed. You will be prompted for the number
+of channels used and the range of channels within which to search for the minimum
+gain channel. If more than one gain range has been used by the RAL109 shaping
+amplifier/discriminator modules, the search range is normally defined by
+those channels set to the highest gain.
+
+The program variables will read data from the offsets and gains files, determine
+the channel with minimum gain, calculate the relative gain (for all channels with
+valid offset and gain data) and output a NAMELIST I/O data file (fort.4) which
+can be read by the sort programs.
+
+Channels with no valid ADC offset and/or gain data have gain set to -1.999999
+
+For example,
+
+tuda2> variables
+
+ *** Program variables
+ *** Enter number of channels (max 1024): 192
+ *** Enter range of channels for min. gain channel search: 64 127
+
+   192 offset data points read
+   191 calibration peak centroids read
+  mean centroid:    1102.4389655172
+  min. gain channel:   118
+ channel:    0 valid:  F offset:     8.49 gain:   -1.9999999
+ channel:    1 valid:  F offset:    10.13 gain:   -1.9999999
+ channel:    2 valid:  F offset:    10.40 gain:   -1.9999999
+ channel:    3 valid:  F offset:     8.87 gain:   -1.9999999
+ channel:    4 valid:  F offset:    12.95 gain:   -1.9999999
+ channel:    5 valid:  F offset:     8.25 gain:   -1.9999999
+ channel:    6 valid:  T offset:    10.72 gain:    0.9234941
+ channel:    7 valid:  F offset:    10.68 gain:   -1.9999999
+ channel:    8 valid:  T offset:    10.11 gain:    0.9180769
+ channel:    9 valid:  F offset:    10.37 gain:   -1.9999999
+ channel:   10 valid:  F offset:    11.87 gain:   -1.9999999
+ channel:   11 valid:  F offset:    12.47 gain:   -1.9999999
+ channel:   12 valid:  T offset:    15.15 gain:    0.9103076
+ channel:   13 valid:  T offset:    12.64 gain:    0.9143502
+ channel:   14 valid:  F offset:    11.77 gain:   -1.9999999
+ channel:   15 valid:  F offset:    12.23 gain:   -1.9999999
+ channel:   16 valid:  F offset:    11.06 gain:   -1.9999999
+ channel:   17 valid:  F offset:    13.45 gain:   -1.9999999
+ channel:   18 valid:  F offset:    13.53 gain:   -1.9999999
+ channel:   19 valid:  F offset:    11.11 gain:   -1.9999999
+ channel:   20 valid:  F offset:    10.99 gain:   -1.9999999
+ channel:   21 valid:  F offset:    11.37 gain:   -1.9999999
+ channel:   22 valid:  F offset:    14.23 gain:   -1.9999999
+ channel:   23 valid:  F offset:    14.32 gain:   -1.9999999
+ channel:   24 valid:  F offset:    10.67 gain:   -1.9999999
+ channel:   25 valid:  F offset:     8.94 gain:   -1.9999999
+ channel:   26 valid:  F offset:    10.90 gain:   -1.9999999
+ channel:   27 valid:  F offset:    12.35 gain:   -1.9999999
+ channel:   28 valid:  F offset:    12.58 gain:   -1.9999999
+ channel:   29 valid:  F offset:    12.07 gain:   -1.9999999
+ channel:   30 valid:  F offset:    10.41 gain:   -1.9999999
+ channel:   31 valid:  F offset:    10.30 gain:   -1.9999999
+ channel:   32 valid:  F offset:     6.24 gain:   -1.9999999
+ channel:   33 valid:  F offset:    11.89 gain:   -1.9999999
+ channel:   34 valid:  F offset:    11.60 gain:   -1.9999999
+ channel:   35 valid:  F offset:     9.83 gain:   -1.9999999
+ channel:   36 valid:  T offset:     9.11 gain:    0.8774685
+ channel:   37 valid:  F offset:    11.21 gain:   -1.9999999
+ channel:   38 valid:  F offset:    10.38 gain:   -1.9999999
+ channel:   39 valid:  F offset:    10.81 gain:   -1.9999999
+ channel:   40 valid:  F offset:   -32.08 gain:   -1.9999999
+ channel:   41 valid:  F offset:   -32.38 gain:   -1.9999999
+ channel:   42 valid:  F offset:   -32.29 gain:   -1.9999999
+ channel:   43 valid:  F offset:   -32.21 gain:   -1.9999999
+ channel:   44 valid:  F offset:   -33.87 gain:   -1.9999999
+ channel:   45 valid:  F offset:   -31.81 gain:   -1.9999999
+ channel:   46 valid:  F offset:   -31.01 gain:   -1.9999999
+ channel:   47 valid:  F offset:   -33.43 gain:   -1.9999999
+ channel:   48 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   49 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   50 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   51 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   52 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   53 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   54 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   55 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   56 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   57 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   58 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   59 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   60 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   61 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   62 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   63 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:   64 valid:  F offset:     2.45 gain:   -1.9999999
+ channel:   65 valid:  T offset:     6.62 gain:    0.8957448
+ channel:   66 valid:  T offset:     2.87 gain:    0.8870994
+ channel:   67 valid:  T offset:     3.44 gain:    0.8451813
+ channel:   68 valid:  T offset:     4.00 gain:    0.8531830
+ channel:   69 valid:  T offset:     5.47 gain:    0.8561404
+ channel:   70 valid:  T offset:     3.58 gain:    0.8395120
+ channel:   71 valid:  T offset:     3.47 gain:    0.8533369
+ channel:   72 valid:  F offset:   -46.84 gain:   -1.9999999
+ channel:   73 valid:  F offset:   -46.90 gain:   -1.9999999
+ channel:   74 valid:  F offset:   -47.12 gain:   -1.9999999
+ channel:   75 valid:  F offset:   -45.36 gain:   -1.9999999
+ channel:   76 valid:  F offset:   -48.63 gain:   -1.9999999
+ channel:   77 valid:  F offset:   -48.14 gain:   -1.9999999
+ channel:   78 valid:  F offset:    56.47 gain:   -1.9999999
+ channel:   79 valid:  F offset:   -48.04 gain:   -1.9999999
+ channel:   80 valid:  F offset:   -43.27 gain:   -1.9999999
+ channel:   81 valid:  T offset:   -42.00 gain:    0.8342469
+ channel:   82 valid:  T offset:   -38.84 gain:    0.9164917
+ channel:   83 valid:  T offset:   -43.30 gain:    0.8712734
+ channel:   84 valid:  T offset:   -41.05 gain:    0.8697258
+ channel:   85 valid:  T offset:   -43.40 gain:    0.8406574
+ channel:   86 valid:  T offset:   -41.67 gain:    0.8485980
+ channel:   87 valid:  T offset:   -43.64 gain:    0.8577751
+ channel:   88 valid:  T offset:   -41.17 gain:    0.8551705
+ channel:   89 valid:  T offset:   -39.23 gain:    0.9297555
+ channel:   90 valid:  T offset:   -39.68 gain:    0.8776948
+ channel:   91 valid:  T offset:   -35.35 gain:    0.9482624
+ channel:   92 valid:  T offset:   -40.59 gain:    0.9316662
+ channel:   93 valid:  T offset:   -38.78 gain:    0.8363045
+ channel:   94 valid:  T offset:   -39.02 gain:    0.9406436
+ channel:   95 valid:  F offset:   -41.51 gain:   -1.9999999
+ channel:   96 valid:  T offset:    15.43 gain:    0.9094458
+ channel:   97 valid:  F offset:    19.09 gain:   -1.9999999
+ channel:   98 valid:  F offset:    17.10 gain:   -1.9999999
+ channel:   99 valid:  F offset:    16.88 gain:   -1.9999999
+ channel:  100 valid:  F offset:    18.26 gain:   -1.9999999
+ channel:  101 valid:  F offset:    17.61 gain:   -1.9999999
+ channel:  102 valid:  F offset:    19.20 gain:   -1.9999999
+ channel:  103 valid:  F offset:    18.18 gain:   -1.9999999
+ channel:  104 valid:  F offset:    18.65 gain:   -1.9999999
+ channel:  105 valid:  T offset:    21.09 gain:    0.9278928
+ channel:  106 valid:  T offset:    21.15 gain:    0.9611815
+ channel:  107 valid:  T offset:    19.04 gain:    0.9236341
+ channel:  108 valid:  T offset:    16.89 gain:    0.8941669
+ channel:  109 valid:  T offset:    16.18 gain:    0.8585857
+ channel:  110 valid:  T offset:    16.42 gain:    0.9361957
+ channel:  111 valid:  F offset:    18.76 gain:   -1.9999999
+ channel:  112 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  113 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  114 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  115 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  116 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  117 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  118 valid:  T offset:   106.56 gain:    1.0000000
+ channel:  119 valid:  F offset:   113.06 gain:   -1.9999999
+ channel:  120 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  121 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  122 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  123 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  124 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  125 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  126 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  127 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  128 valid:  F offset:     0.98 gain:   -1.9999999
+ channel:  129 valid:  F offset:     1.18 gain:   -1.9999999
+ channel:  130 valid:  F offset:     0.15 gain:   -1.9999999
+ channel:  131 valid:  F offset:     6.03 gain:   -1.9999999
+ channel:  132 valid:  F offset:     2.95 gain:   -1.9999999
+ channel:  133 valid:  F offset:     3.11 gain:   -1.9999999
+ channel:  134 valid:  F offset:     2.19 gain:   -1.9999999
+ channel:  135 valid:  F offset:     3.01 gain:   -1.9999999
+ channel:  136 valid:  F offset:     2.66 gain:   -1.9999999
+ channel:  137 valid:  F offset:     2.70 gain:   -1.9999999
+ channel:  138 valid:  F offset:     4.24 gain:   -1.9999999
+ channel:  139 valid:  F offset:     2.75 gain:   -1.9999999
+ channel:  140 valid:  T offset:     3.07 gain:    0.8747154
+ channel:  141 valid:  T offset:     5.84 gain:    0.9036511
+ channel:  142 valid:  T offset:     2.52 gain:    0.8320093
+ channel:  143 valid:  T offset:     0.29 gain:    0.8418437
+ channel:  144 valid:  T offset:     5.96 gain:    0.8831153
+ channel:  145 valid:  T offset:     3.26 gain:    0.8460478
+ channel:  146 valid:  T offset:     8.13 gain:    0.8658858
+ channel:  147 valid:  T offset:     5.73 gain:    0.8890078
+ channel:  148 valid:  T offset:     6.96 gain:    0.8352727
+ channel:  149 valid:  T offset:     6.82 gain:    0.8602298
+ channel:  150 valid:  T offset:     9.91 gain:    0.8911754
+ channel:  151 valid:  T offset:     3.59 gain:    0.8638678
+ channel:  152 valid:  F offset:    10.17 gain:   -1.9999999
+ channel:  153 valid:  T offset:     6.73 gain:    0.8898900
+ channel:  154 valid:  T offset:     3.63 gain:    0.8448917
+ channel:  155 valid:  T offset:     7.81 gain:    0.8505975
+ channel:  156 valid:  T offset:     5.98 gain:    0.8739572
+ channel:  157 valid:  T offset:     6.98 gain:    0.8574295
+ channel:  158 valid:  T offset:     5.13 gain:    0.8896721
+ channel:  159 valid:  T offset:     8.57 gain:    0.9778209
+ channel:  160 valid:  T offset:    -2.43 gain:    0.8346818
+ channel:  161 valid:  T offset:     3.65 gain:    0.8512396
+ channel:  162 valid:  T offset:     3.00 gain:    0.8823828
+ channel:  163 valid:  T offset:     2.98 gain:    0.8507527
+ channel:  164 valid:  F offset:     1.00 gain:   -1.9999999
+ channel:  165 valid:  F offset:     1.29 gain:   -1.9999999
+ channel:  166 valid:  T offset:     1.86 gain:    0.9192900
+ channel:  167 valid:  F offset:     1.98 gain:   -1.9999999
+ channel:  168 valid:  F offset:     4.66 gain:   -1.9999999
+ channel:  169 valid:  F offset:     3.16 gain:   -1.9999999
+ channel:  170 valid:  F offset:     3.34 gain:   -1.9999999
+ channel:  171 valid:  F offset:     4.85 gain:   -1.9999999
+ channel:  172 valid:  F offset:     3.04 gain:   -1.9999999
+ channel:  173 valid:  F offset:     2.14 gain:   -1.9999999
+ channel:  174 valid:  F offset:     2.41 gain:   -1.9999999
+ channel:  175 valid:  F offset:     2.72 gain:   -1.9999999
+ channel:  176 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  177 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  178 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  179 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  180 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  181 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  182 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  183 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  184 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  185 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  186 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  187 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  188 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  189 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  190 valid:  F offset: -9999.99 gain:   -1.9999999
+ channel:  191 valid:  F offset: -9999.99 gain:   -1.9999999
+tuda2> cat fort.4
+  $variables
+  offset(   0) =     8.49
+  offset(   1) =    10.13
+  offset(   2) =    10.40
+  offset(   3) =     8.87
+  offset(   4) =    12.95
+  offset(   5) =     8.25
+  offset(   6) =    10.72
+  offset(   7) =    10.68
+  offset(   8) =    10.11
+  offset(   9) =    10.37
+  offset(  10) =    11.87
+  offset(  11) =    12.47
+  offset(  12) =    15.15
+  offset(  13) =    12.64
+  offset(  14) =    11.77
+  offset(  15) =    12.23
+	:
+	:
+  gain( 140) =    0.8747154
+  gain( 141) =    0.9036511
+  gain( 142) =    0.8320093
+  gain( 143) =    0.8418437
+  gain( 144) =    0.8831153
+  gain( 145) =    0.8460478
+  gain( 146) =    0.8658858
+  gain( 147) =    0.8890078
+	:
+	:
+ $[end]
+tuda2> cp fort.4 ~/S1287/sort/variables.dat
+
+Finalising the Calibration
+__________________________
+
+The mixed alpha source data should now be re-sorted using the skeleton sort
+program (sort/sort.f). The program should be modified to read the NAMELIST I/O
+data file (sort/variables.dat).
+
+A list of potential NAMELIST I/O error messages can be found at:
+
+http://download.oracle.com/docs/cd/E19422-01/819-3686/A_messages.html#pgfId-15529
+
+The offsets and gains provided by the NAMELIST I/O data file will gain match
+channels such that events of a given energy appear at a common (arbitrary)
+channel number. For example, suppose the 241Am peak centroid appears at channel
+987.65 (say), assuming the gain match has been successful. 
+
+We now require a scaling factor such that the 241Am peak centroid appears at a
+specified channel for all ADC channels.
+
+Two common choices are to specify a channel such that the spectrum dispersion
+is 10 or 100keV/channel (other choices are possible with the proviso that the
+spectrum dispersion does not exceed that provided by the raw ADC data).
+
+For an MSL type S2 DSSSD (M2 contact ~0.25um Al/~0.5um p+n dead layer) the
+observed energy of the 241Am peak centroid would be 5.486MeV less the dead
+layer energy loss or 5.380MeV. The scaling factor would then be given by:
+
+c(1) = 5.380 * 100 / 987.65 = 0.544727383
+
+The absolute energy (for channel i) of any event can now be calculated within
+a sort program as follows:
+
+	0.01 * c(1) * gain(i) * (data(i) - offset(i))
+
+as a REAL value (units: MeV)
+
+	INT( c(1) * gain(i) * (data(i) - offset(i)) + rand(iflag) )
+
+as an INTEGER value (units: channels) to increment spectra with a dispersion of
+10keV/channel.
+
+If detectors with different dead layer thicknesses are used, different values
+of c can be used for ADC channels corresponding to those detectors e.g. c(1),
+c(2) etc.
+
+If more than one gain setting has been used for the RAL109 shaping amplifier
+/discriminator modules then different values of c will be required for those
+ADC channels corresponding to those RAL109 modules. Similarly, if detectors
+with different dead layers have been used, different values of c will be required
+for those ADC channels corresponding to those detectors.
+
+These values should then be appended to the NAMELIST I/O data file
+(sort/variables.dat). The mixed alpha source data should now be re-sorted using
+the skeleton sort program (sort/sort.f).
+
+tuda2> cat ~/S1287/variables.dat
+  $variables
+  offset(   0) =     8.49
+  offset(   1) =    10.13
+  offset(   2) =    10.40
+  offset(   3) =     8.87
+  offset(   4) =    12.95
+  offset(   5) =     8.25
+  offset(   6) =    10.72
+  offset(   7) =    10.68
+	:
+	:
+  c(1) = 0.544727383
+ $[end]
+
+T.Davinson - May 2011
