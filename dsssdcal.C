@@ -17,7 +17,7 @@
 #include <TMath.h>
 // #include "Dragon.hxx"
 
-static const int MAX_CHANNELS   = 32;
+static const Int_t MAX_CHANNELS   = 32;
 static const Int_t Nalpha       = 3;
 static const Int_t cut_channel  = 256; // set to relatively high channel in case ADC thresholds aren't set appropriately
 static const Int_t Max_pulser   = 12;
@@ -97,8 +97,6 @@ Double_t *pulser(const char *file, Int_t strip, Double_t sigma, Double_t thresh)
 
         h1->Delete();
         f->Close();
-        cout << 100*(1.0 - inl) << endl;
-
 
         return par;
     }
@@ -207,8 +205,8 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
     }
 
     // scale gains to min gain channel
-    cout << "Channel" << "\t\t" << "Offset" << "\t\t" << "Gain" << "\t\t\t" << "INL" << "\n";
-    cout << "=======" << "\t\t" << "======" << "\t\t" << "====" << "\t\t\t" << "===" << "\n";
+    printf("%-7s  %-6s  %-6s  %-6s\n","Channel","Offset","Gain","INL");
+    printf("%-7s  %-6s  %-6s  %-6s\n","=======","======","======","======");
     for(Int_t i=0; i < MAX_CHANNELS; ++i){
         if ( i == min_chan){
             gain[i] = 1.0;
@@ -217,7 +215,7 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
         else{
             gain[i] = min_gain/gain[i];
         }
-        cout << i << "\t\t" << offset[i] << "\t\t" << gain[i] << "\t\t" << inl[i] << "\n";
+        printf("%7i  %-6g  %-6g  %-6g\n",i ,offset[i], gain[i], inl[i]);
     }
 
     if(odb){
