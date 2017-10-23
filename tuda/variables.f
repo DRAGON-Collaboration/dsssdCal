@@ -27,14 +27,14 @@ C     Initialise data
        ncentroids( i ) = 0
        meanrgain( i ) = -1.9999999d+00
        valid( i ) = .false.
-       do j = 1, 3 
+       do j = 1, 3
         peak( i, j ) = -9999.99d+00
         dpeak( i, j ) = 0.0d+00
         rgain( i, j ) = -1.9999999d+00
        enddo
-      enddo      
+      enddo
 
-      WRITE( 6, 9050 ) 
+      WRITE( 6, 9050 )
       READ( 5, * ) imax
 
       WRITE( 6, 9060 )
@@ -108,7 +108,7 @@ C     Offset correction of (alpha) calibration peak centroids
       enddo
 
 C     Determine channel with minimum gain
-      
+
       sum = 0.0d+00
       k =0
       do i = lo, hi
@@ -116,9 +116,9 @@ C     Determine channel with minimum gain
         sum = sum + peak(i,2)
         k = k + 1
        endif
-      enddo        
+      enddo
       mean = sum / dfloat( k )
- 
+
       write( 6, * ) ' mean centroid:', mean
       min = -1
       minpeak = 65535.0d+00
@@ -148,7 +148,7 @@ C     Determine mean relative gain of each channel
        do j = 1, 3
         sumrgain = sumrgain + rgain( i, j )
        enddo
-       if ( valid(i) ) then 
+       if ( valid(i) ) then
         meanrgain( i ) = sumrgain / 3.0d+00
        endif
       enddo
@@ -187,6 +187,5 @@ C     Output results
  9100 FORMAT( '  $[end]' )
 
 C----67---------------------------------------------------------------72------80
- 
+
       end
-  

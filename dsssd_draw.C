@@ -14,10 +14,10 @@ void dsssd_draw(const char *fname="dsssdcal.root"){
 
 	// Draw calibrated summary spectrum & total energy spectrum
 	TCanvas *c2=new TCanvas();
-	dsssd_cal->GetYaxis()->SetRangeUser(0,8);
- 	dsssd_cal->Draw("colz");
+	// dsssd_cal->GetYaxis()->SetRangeUser(0,8);
+ 	dsssd_cal->Draw("");
 
-	TH1D *py=dsssd_cal->ProjectionY("DSSSD Energy",0,8);
+	TH1D *py=dsssd_cal->ProjectionY("DSSSD Energy");
 	TCanvas *c3=new TCanvas();
 	py->Draw();
 

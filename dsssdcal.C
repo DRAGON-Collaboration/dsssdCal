@@ -18,13 +18,15 @@
 // #include "Dragon.hxx"
 
 static const Int_t MAX_CHANNELS   = 32;
-static const Int_t Nalpha       = 3;
-static const Int_t cut_channel  = 256; // set to relatively high channel in case ADC thresholds aren't set appropriately
-static const Int_t Max_pulser   = 12;
-static const Double_t sigma_f   = 3;
-static const Double_t thresh_f  = 0.25;
-static const Double_t sigma_b   = 5;
-static const Double_t thresh_b  = 0.2;
+static const Int_t Nalpha         = 3;
+static const Int_t Max_pulser     = 12;
+static const Double_t sigma_f     = 3;
+static const Double_t thresh_f    = 0.25;
+static const Double_t sigma_b     = 5;
+static const Double_t thresh_b    = 0.2;
+static const Double_t range[2]    = {700, 1500}; // channel range of alpha peaks
+static const Double_t cut_channel = 256;
+
 
 const Double_t alpha_E[3]    = {5.15659,5.48556,5.80477}; // alpha energies of triple alpha source in MeV
 const Double_t dLayer        = 0.00374; // dead layer thickness (Al equivalent) in mm (from C. Wrede's thesis).
@@ -40,10 +42,13 @@ Double_t *pulser(const char *file, Int_t strip, Double_t sigma, Double_t thresh)
 {
 
     TFile *f = TFile::Open(file);
+    TTree *t3 = (TTree *)f->Get("t3");
 
-    TH1F *h1 = new TH1F("h1", "h1", 1024, 0, 4095);
+    Double_t *par = new Double_t[2];
 
-    t3->Draw(Form("dsssd.ecal[%i]>>h1",strip),Form("dsssd.ecal[%i]>%f",strip,cut_channel),"goff");
+    TH1F *h1 = new TH1F("h1", "h1", 960, 0, 3840); // cut out over/underflow
+    t3->Draw(Form("dsssd.ecal[%i]>>h1",strip),"","goff");
+
     TSpectrum *s = new TSpectrum();
     Int_t nfound = s->Search(h1,sigma,"",thresh);
     const int npoints = nfound;
@@ -58,8 +63,7 @@ Double_t *pulser(const char *file, Int_t strip, Double_t sigma, Double_t thresh)
 
     else{
         Float_t xsort;
-        Double_t inl, m, offset, pulser;
-        Double_t *par = new Double_t[2];
+        Double_t inl, m, offset, pulser, x, y, temp;
         Float_t *xpeaks = s->GetPositionX();
         Int_t index[npoints];
         TMath::Sort(npoints,xpeaks,index,0);
@@ -84,11 +88,10 @@ Double_t *pulser(const char *file, Int_t strip, Double_t sigma, Double_t thresh)
         // Double_t slope     = fit->Value(1);
 
         // find maximum INL
-        Float_t m_max = ((pow(2.0,12)-256) / 8.0);
         inl = 0;
-
         for(Int_t j = 0; j < npoints; j++){
-            Float_t temp = abs( j - (m*j - offset)) / (m*j - offset );
+            g1->GetPoint(j, x, y);
+            temp = abs( x - (m*x - offset)) / (m*x - offset );
             if(temp > inl) inl = temp;
         }
 
@@ -103,20 +106,21 @@ Double_t *pulser(const char *file, Int_t strip, Double_t sigma, Double_t thresh)
 
 }
 
-Double_t *alpha(const char *file, Int_t strip, Double_t offset, Double_t sigma, Double_t thresh)
+Double_t *alpha(const char *file, Int_t strip, Double_t offset, Double_t range[2], Double_t sigma, Double_t thresh)
 {
     TFile *f = TFile::Open(file);
+    TTree *t3 = (TTree *)f->Get("t3");
 
     Double_t *par = new Double_t[2];
 
-    TH1F *h1 = new TH1F("h1","h1",4096,0,4095);
+    TH1F *h1 = new TH1F("h1", "h1", range[1] - range[0] + 1, range[0], range[1]);
+    // t3->Draw(Form("dsssd.ecal[%i]>>h1",strip),Form("dsssd.ecal[%i]>%f",strip,cut_channel),"goff");
 
     dragon::Tail* ptail = new dragon::Tail();
     t3->SetBranchAddress("tail", &ptail);
     for(Long_t evt = 0; evt < t3->GetEntries(); evt++) {
         t3->GetEntry(evt);
         Double_t val = ptail->dsssd.ecal[strip]-offset;
-        if(val<cut_channel) continue;
         h1->Fill(val);
     }
 
@@ -127,15 +131,11 @@ Double_t *alpha(const char *file, Int_t strip, Double_t offset, Double_t sigma, 
     if (nfound < 3){
         cout << "WARNING: Failed to find 3 alpha peaks in strip " << strip << " spectrum; skipping calibration.\n";
         par[0] = 0, par[1] = -1.99999;
-        return par;
-        h1->Delete();
     }
     else if (nfound > 3){
         cout << "WARNING: Found too many alpha peaks in strip " << strip << " spectrum; skipping calibration.\n";
         cout << "You may need to adjust threshold and/or sigma argument(s) for TSpectrum::Search() (in dsssdcal.C).\n";
         par[0] = 0, par[1] = -1.99999;
-        return par;
-        h1->Delete();
     }
     else{
         const Int_t npoints = nfound;
@@ -144,29 +144,35 @@ Double_t *alpha(const char *file, Int_t strip, Double_t offset, Double_t sigma, 
         Float_t xsort;
         Int_t index[npoints];
         TMath::Sort(npoints,xpeaks,index,kFALSE);
-        TGraph *g1=new TGraph(npoints);
+        TGraph *g1 = new TGraph(npoints);
 
-        for (Int_t p=0; p<nfound; p++){
+        Double_t sum;
+        for (Int_t p=0; p < npoints; p++){
             xsort = xpeaks[index[p]];
             g1->SetPoint(p,xsort,E_dep_grid[p]);
-            // cout << p << "\t" << xsort << "\t" << E_peak[p] << "\n";
+            cout << p << "\t" << xsort << "\t" << E_dep_grid[p] << "\n";
+            // sum += E_dep_grid[p] / xsort;
         }
+
+        // par[0] = 0, par[1] = sum / 3.0;
+
+        // double x, y;
+        // g1->GetPoint(2, x, y);
+        // par[0] = 0, par[1] = y / x;
 
         // new TCanvas();
         // g1->SetMarkerStyle(21);
         // g1->Draw("AP");
-        // g1->Fit("pol1","Q");
-        TFitResultPtr fit = g1->Fit("pol1","qns");
-        Double_t *par = new Double_t[2];
+        TFitResultPtr fit = g1->Fit("pol1","ns");
         par[0] = fit->Value(0), par[1] = fit->Value(1);
+
         // cout << "Energy calibration parameters for strip " << strip << ":\n";
         // cout << "par[0]" << "\t" << "par[1]\n";
         // cout << par[0] << "\t" << par[1] << "\n";
-        return par;
-        h1->Delete();
     }
-
+    h1->Delete();
     f->Close();
+    return par;
 
 }
 
@@ -174,7 +180,7 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
 {
 
     Int_t min_chan = 99;
-    Double_t min_gain = pow(2.0,12);
+    Double_t max_slope = 0;
     Double_t offset[MAX_CHANNELS];
     Double_t gain[MAX_CHANNELS];
     Double_t slope[MAX_CHANNELS];
@@ -187,35 +193,35 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
     for (Int_t i = 0; i < MAX_CHANNELS; i++){
         if(i < 16) {
             par_p = pulser(fp, i, sigma_f, thresh_f);
-            par_a = alpha(fa, i, offset[i], sigma_f, thresh_f);
+            par_a = alpha(fa, i, offset[i], range, sigma_f, thresh_f);
         }
         else {
             par_p = pulser(fp,i, sigma_b, thresh_b);
-            par_a = alpha(fa, i, offset[i], sigma_b, thresh_b);
+            par_a = alpha(fa, i, offset[i], range, sigma_b, thresh_b);
         }
         offset[i] = par_p[0];
         inl[i]    = par_p[1];
         intercept[i]  = par_a[0];
         gain[i] = par_a[1];
         // delete[] par;
-        if(fabs(gain[i]) < min_gain){
-            min_gain = gain[i];
+        if(gain[i] > max_slope){
+            max_slope = gain[i];
             min_chan = i;
         }
     }
 
     // scale gains to min gain channel
-    printf("%-7s  %-6s  %-6s  %-6s\n","Channel","Offset","Gain","INL");
-    printf("%-7s  %-6s  %-6s  %-6s\n","=======","======","======","======");
+    printf("\n\n%-7s \t %-8s \t %-7s \t %-7s\n","Channel","Offset","Gain","INL");
+    printf("%-7s \t %-8s \t %-7s \t %-7s\n","=======","======","======","======");
     for(Int_t i=0; i < MAX_CHANNELS; ++i){
         if ( i == min_chan){
             gain[i] = 1.0;
         }
-        else if ( gain[i] < 0 ) continue;
+        else if ( gain[i] < 0 ) gain[i] = gain[i];
         else{
-            gain[i] = min_gain/gain[i];
+            gain[i] = gain[i] / max_slope;
         }
-        printf("%7i  %-6g  %-6g  %-6g\n",i ,offset[i], gain[i], inl[i]);
+        printf("%7i \t %-6g \t %-6g \t %-6g\n",i ,offset[i], gain[i], inl[i]);
     }
 
     if(odb){
@@ -232,33 +238,35 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
         cout << "ATTENTION: Current odb state saved to dsssd.xml in ${DH}/../calibration.\n";
     }
 
+
+    TFile *f = TFile::Open(fa);
     // Fill calibrated summary spectrum
-    // TCanvas *c2=new TCanvas();
-    TH2F *dsssd_cal = new TH2F("dsssd_cal","Calibrated DSSSD Spectrum",MAX_CHANNELS,0,MAX_CHANNELS,4096,0,20);
+    TH2F *dsssd_cal = new TH2F("dsssd_cal","Calibrated DSSSD Spectrum",MAX_CHANNELS,0,MAX_CHANNELS,4096,0,4095);
     dragon::Tail* ptail = new dragon::Tail();
     t3->SetBranchAddress("tail", &ptail);
     for(Long_t evt = 0; evt < t3->GetEntries(); evt++) {
         t3->GetEntry(evt);
-        for(Int_t i=0; i<MAX_CHANNELS; i++){
-            Double_t val = (ptail->dsssd.ecal[i]-offset[i])*gain[i]+intercept[i];
-            if(val<1.5) continue;
-            dsssd_cal->Fill(i,val);
+        for(Int_t i = 0; i < MAX_CHANNELS; i++){
+            Double_t val = (ptail->dsssd.ecal[i] - offset[i])*gain[i];
+            if (val < cut_channel) continue;
+            dsssd_cal->Fill(i, val);
         }
     }
 
     t3->ResetBranchAddresses();
     delete ptail;
 
-    TH2F *h0=new TH2F("h0","Uncalibrated DSSSD Spectrum",MAX_CHANNELS,0,MAX_CHANNELS,4096,0,4095);
-    TH1F *h2=new TH1F("h2","Uncalibrated DSSSD Energy (Front)",4096,0,4095);
-    TH1F *h3=new TH1F("h3","Uncalibrated DSSSD Energy (Back)",4096,0,4095);
+    TH2F *h0 = new TH2F("h0","Uncalibrated DSSSD Spectrum",MAX_CHANNELS,0,MAX_CHANNELS,4096,0,4095);
+    TH1F *h2 = new TH1F("h2","Uncalibrated DSSSD Energy (Front)",4096,0,4095);
+    TH1F *h3 = new TH1F("h3","Uncalibrated DSSSD Energy (Back)",4096,0,4095);
 
     t3->Draw("dsssd.ecal[]:Iteration$>>h0","","goff");
     t3->Draw("dsssd.efront>>h2","","goff");
     t3->Draw("dsssd.eback>>h3","","goff");
 
     // Create rootfile for writing
-    TFile *file=new TFile("dsssdcal.root","RECREATE");
+    TFile *file = new TFile("dsssdcal.root","RECREATE");
+    file->cd();
 
     dsssd_cal->Write();
     h0->Write();

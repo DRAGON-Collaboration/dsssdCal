@@ -1,4 +1,3 @@
-
       IMPLICIT DOUBLE PRECISION(A-H,O-Z),INTEGER(I-N)
 C
       DOUBLE PRECISION X( 100 ), Y( 100 ), A( 100 ), FWHM( 100 )
@@ -32,7 +31,7 @@ C     and separates the spectra file name
       i = RINDEX( TEXT(1:80), '/' )
       j = RINDEX( TEXT(1:80), ',' )
       SPEC(1:8) = TEXT(i+1:j-1)
- 
+
 C     Removes the s and .msf from the file name
 
       k = index(SPEC , 's' )
@@ -48,7 +47,7 @@ C     Removes the s and .msf from the file name
       READ( 5, *, END = 10 )
      +    ( IX( I ), Y( I ), DY( I ), A( I ), DA( I ),
      +      FWHM( I ), I = 1, 100    )
-   10 CONTINUE 
+   10 CONTINUE
       NUMBER = I - 1
 
       IF ( NUMBER.LT.3 .OR. NUMBER.GT.9 ) GOTO 900
@@ -84,14 +83,14 @@ C
       FY( J ) = XM * X( J ) + XC
       DF( J ) = FY( J ) - Y( J )
       ABSDF = DSQRT( DF( J ) * DF( J ) )
-      IF ( ABSDF.GT.DFMAX ) THEN     
-      DFMAX = ABSDF   
+      IF ( ABSDF.GT.DFMAX ) THEN
+      DFMAX = ABSDF
       ENDIF
       WRITE( 2, 1000 ) X( J ), Y( J ), FY( J ), DF( J )
   600 CONTINUE
 C
-      WRITE( 2, 1010) XM, ERRXM                            
-      WRITE( 2, 1020) XC, ERRXC                            
+      WRITE( 2, 1010) XM, ERRXM
+      WRITE( 2, 1020) XC, ERRXC
       ETA = ( DFMAX * 1.0D+02 ) / ( Y( NUMBER ) - Y( 1 ) )
       WRITE( 2, 1030) ETA
       WRITE( 2, 1040) EFWHM/NUMBER
@@ -161,7 +160,7 @@ C     1050  FORMAT( 8X, 'offset( ', a<length-1>, ' ) = ', f9.3 )
        IF ( string(i:i+j-1) .EQ. substring(1:j) ) k=i
 
       ENDDO
-      
+
       rindex = k
 
       RETURN
