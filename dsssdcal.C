@@ -46,7 +46,7 @@ Double_t *pulser(const char *file, Int_t strip, Double_t sigma, Double_t thresh)
 
     Double_t *par = new Double_t[2];
 
-    TH1F *h1 = new TH1F("h1", "h1", 960, 0, 3840); // cut out over/underflow
+    TH1F *h1 = new TH1F("h1", "h1", 3840, 0, 3839); // cut out over/underflow
     t3->Draw(Form("dsssd.ecal[%i]>>h1",strip),"","goff");
 
     TSpectrum *s = new TSpectrum();
@@ -139,7 +139,7 @@ Double_t *alpha(const char *file, Int_t strip, Double_t offset, Double_t range[2
     }
     else{
         const Int_t npoints = nfound;
-        Float_t *xpeaks=s->GetPositionX();
+        Float_t *xpeaks = s->GetPositionX();
 
         Float_t xsort;
         Int_t index[npoints];
@@ -193,13 +193,14 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
     for (Int_t i = 0; i < MAX_CHANNELS; i++){
         if(i < 16) {
             par_p = pulser(fp, i, sigma_f, thresh_f);
+            offset[i] = par_p[0];
             par_a = alpha(fa, i, offset[i], range, sigma_f, thresh_f);
         }
         else {
             par_p = pulser(fp,i, sigma_b, thresh_b);
+            offset[i] = par_p[0];
             par_a = alpha(fa, i, offset[i], range, sigma_b, thresh_b);
         }
-        offset[i] = par_p[0];
         inl[i]    = par_p[1];
         intercept[i]  = par_a[0];
         gain[i] = par_a[1];
@@ -214,13 +215,13 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
     printf("\n\n%-7s \t %-8s \t %-7s \t %-7s\n","Channel","Offset","Gain","INL");
     printf("%-7s \t %-8s \t %-7s \t %-7s\n","=======","======","======","======");
     for(Int_t i=0; i < MAX_CHANNELS; ++i){
-        if ( i == min_chan){
-            gain[i] = 1.0;
-        }
-        else if ( gain[i] < 0 ) gain[i] = gain[i];
-        else{
-            gain[i] = gain[i] / max_slope;
-        }
+        // if ( i == min_chan){
+        //     gain[i] = 1.0;
+        // }
+        // else if ( gain[i] < 0 ) gain[i] = gain[i];
+        // else{
+        //     gain[i] = gain[i] / max_slope;
+        // }
         printf("%7i \t %-6g \t %-6g \t %-6g\n",i ,offset[i], gain[i], inl[i]);
     }
 
