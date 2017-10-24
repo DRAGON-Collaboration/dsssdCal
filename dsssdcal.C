@@ -193,13 +193,14 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
     for (Int_t i = 0; i < MAX_CHANNELS; i++){
         if(i < 16) {
             par_p = pulser(fp, i, sigma_f, thresh_f);
+            offset[i] = par_p[0];
             par_a = alpha(fa, i, offset[i], range, sigma_f, thresh_f);
         }
         else {
             par_p = pulser(fp,i, sigma_b, thresh_b);
+            offset[i] = par_p[0];
             par_a = alpha(fa, i, offset[i], range, sigma_b, thresh_b);
         }
-        offset[i] = par_p[0];
         inl[i]    = par_p[1];
         intercept[i]  = par_a[0];
         gain[i] = par_a[1];
@@ -211,6 +212,9 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
     }
 
     // scale gains to min gain channel
+    printf("\n%-64s", "================================================================\n");
+    printf("Calibration constant: \t c(1) = %-6f MeV / channel", max_slope);
+    printf("\n%-64s", "================================================================\n");
     printf("\n\n%-7s \t %-8s \t %-7s \t %-7s\n","Channel","Offset","Gain","INL");
     printf("%-7s \t %-8s \t %-7s \t %-7s\n","=======","======","======","======");
     for(Int_t i=0; i < MAX_CHANNELS; ++i){
@@ -221,14 +225,14 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
         else{
             gain[i] = gain[i] / max_slope;
         }
-        printf("%7i \t %-6g \t %-6g \t %-6g\n",i ,offset[i], gain[i], inl[i]);
+        printf("%7i \t %-6g \t %-6g \t %-6g\n",i ,offset[i] + intercept[i] / max_slope, gain[i], inl[i]);
     }
 
     if(odb){
         // Write slopes and offsets to odb
         for(Int_t i=0; i< MAX_CHANNELS; ++i) {
             gSystem->Exec(Form("odbedit -c \"set /dragon/dsssd/variables/adc/slope[%d] %.6g\"\n", i, gain[i]));
-            gSystem->Exec(Form("odbedit -c \"set /dragon/dsssd/variables/adc/offset[%d] %.6g\"\n", i,-offset[i]/gain[i]));
+            gSystem->Exec(Form("odbedit -c \"set /dragon/dsssd/variables/adc/offset[%d] %.6g\"\n", i, -(offset[i] + intercept[i] / max_slope) / gain[i] ) );
         }
         // Save current odb state to xml file
         gSystem->Exec("odbedit -d /dragon/dsssd/variables/adc -c 'save -x dsssdcal.xml'"); // save calibration as xml file in pwd
@@ -240,21 +244,6 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
 
 
     TFile *f = TFile::Open(fa);
-    // Fill calibrated summary spectrum
-    TH2F *dsssd_cal = new TH2F("dsssd_cal","Calibrated DSSSD Spectrum",MAX_CHANNELS,0,MAX_CHANNELS,4096,0,4095);
-    dragon::Tail* ptail = new dragon::Tail();
-    t3->SetBranchAddress("tail", &ptail);
-    for(Long_t evt = 0; evt < t3->GetEntries(); evt++) {
-        t3->GetEntry(evt);
-        for(Int_t i = 0; i < MAX_CHANNELS; i++){
-            Double_t val = (ptail->dsssd.ecal[i] - offset[i])*gain[i];
-            if (val < cut_channel) continue;
-            dsssd_cal->Fill(i, val);
-        }
-    }
-
-    t3->ResetBranchAddresses();
-    delete ptail;
 
     TH2F *h0 = new TH2F("h0","Uncalibrated DSSSD Spectrum",MAX_CHANNELS,0,MAX_CHANNELS,4096,0,4095);
     TH1F *h2 = new TH1F("h2","Uncalibrated DSSSD Energy (Front)",4096,0,4095);
@@ -264,11 +253,30 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE)
     t3->Draw("dsssd.efront>>h2","","goff");
     t3->Draw("dsssd.eback>>h3","","goff");
 
+    // Fill calibrated summary spectrum
+    TH2F *dsssd_cal = new TH2F("dsssd_cal","Calibrated DSSSD Spectrum",MAX_CHANNELS,0,MAX_CHANNELS,4096,0,4095);
+    TH1F *front_cal = new TH1F("front_cal","Calibrated DSSSD Spectrum",4096,0,17.1);
+    dragon::Tail* ptail = new dragon::Tail();
+    t3->SetBranchAddress("tail", &ptail);
+    for(Long_t evt = 0; evt < t3->GetEntries(); evt++) {
+        t3->GetEntry(evt);
+        for(Int_t i = 0; i < MAX_CHANNELS; i++){
+            Double_t val = (ptail->dsssd.ecal[i] - offset[i] + intercept[i] / max_slope)*gain[i];
+            if (val < cut_channel) continue;
+            if (i < 16) front_cal->Fill(max_slope*val);
+            dsssd_cal->Fill(i, val);
+        }
+    }
+
+    t3->ResetBranchAddresses();
+    delete ptail;
+
     // Create rootfile for writing
     TFile *file = new TFile("dsssdcal.root","RECREATE");
     file->cd();
 
     dsssd_cal->Write();
+    front_cal->Write();
     h0->Write();
     h2->Write();
     h3->Write();
