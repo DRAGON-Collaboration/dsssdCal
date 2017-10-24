@@ -80,7 +80,7 @@ Double_t *pulser(const char *file, Int_t strip, Double_t sigma, Double_t thresh)
         // new TCanvas();
         // g1->SetMarkerStyle(21);
         // g1->Draw("AP");
-        TFitResultPtr fit = g1->Fit("pol1","fqns");
+        TFitResultPtr fit = g1->Fit("pol1","EFMNSV");
         m      = fit->Value(1);
         offset = fit->Value(0);
         // cout << "Offset for strip " << strip << ":\n";
@@ -163,7 +163,7 @@ Double_t *alpha(const char *file, Int_t strip, Double_t offset, Double_t range[2
         // new TCanvas();
         // g1->SetMarkerStyle(21);
         // g1->Draw("AP");
-        TFitResultPtr fit = g1->Fit("pol1","fnsv");
+        TFitResultPtr fit = g1->Fit("pol1","EFMNSV");
         par[0] = fit->Value(0), par[1] = fit->Value(1);
 
         // cout << "Energy calibration parameters for strip " << strip << ":\n";
