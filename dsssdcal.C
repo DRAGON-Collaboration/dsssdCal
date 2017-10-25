@@ -4,17 +4,18 @@
 #include <cstdio>
 #include <cstring>
 #include <sstream>
-#include <Riostream.h>
-#include <TString.h>
-#include <TFile.h>
-#include <TFitResult.h>
-#include <TSystem.h>
-#include <TDirectory.h>
-#include <TH1.h>
-#include <TH2.h>
-#include <TTree.h>
-#include <TGraph.h>
-#include <TMath.h>
+#include <fstream>
+#include "Riostream.h"
+#include "TString.h"
+#include "TFile.h"
+#include "TFitResult.h"
+#include "TSystem.h"
+#include "TDirectory.h"
+#include "TH1.h"
+#include "TH2.h"
+#include "TTree.h"
+#include "TGraph.h"
+#include "TMath.h"
 // #include "Dragon.hxx"
 
 static const Int_t MAX_CHANNELS   = 32;
@@ -176,9 +177,11 @@ Double_t *alpha(const char *file, Int_t strip, Double_t offset, Double_t range[2
 
 }
 
-void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE, Bool_t json = kTRUE, Bool_t xml = kTRUE, const char* jfname = "$DH/../calibration/dsssdcal.json", const char* xfname = "$DH/../calibration/dsssdcal.xml")
+void dsssdcal(const char *pfname, const char *afname,
+              Bool_t odb = kTRUE, Bool_t json = kTRUE, Bool_t xml = kTRUE,
+              const char* jfname = "${DH}/../calibration/dsssdcal.json",
+              const char* xfname = "${DH}/../calibration/dsssdcal.xml")
 {
-
     Int_t min_chan = 99;
     Double_t max_slope = 0;
     Double_t offset[MAX_CHANNELS];
@@ -192,14 +195,14 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE, Bool_t json = 
     // Get offsets and energy calibration parameters
     for (Int_t i = 0; i < MAX_CHANNELS; i++){
         if(i < 16) {
-            par_p = pulser(fp, i, sigma_f, thresh_f);
+            par_p = pulser(pfname, i, sigma_f, thresh_f);
             offset[i] = par_p[0];
-            par_a = alpha(fa, i, offset[i], range, sigma_f, thresh_f);
+            par_a = alpha(afname, i, offset[i], range, sigma_f, thresh_f);
         }
         else {
-            par_p = pulser(fp,i, sigma_b, thresh_b);
+            par_p = pulser(pfname,i, sigma_b, thresh_b);
             offset[i] = par_p[0];
-            par_a = alpha(fa, i, offset[i], range, sigma_b, thresh_b);
+            par_a = alpha(afname, i, offset[i], range, sigma_b, thresh_b);
         }
         inl[i]    = par_p[1];
         intercept[i]  = par_a[0];
@@ -230,10 +233,10 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE, Bool_t json = 
     }
 
     if(odb) WriteOdb(gain, offset, json, xml);
-    else if(!(odb) && xml) WriteXml(xfname, gain, offset);
-    else if(!(odb) && json) WriteXml(jfname, gain, offset);
+    else if(!(odb) && xml) WriteXml(gain, offset, xfname);
+    else if(!(odb) && json) WriteJson(gain, offset, jfname);
 
-    TFile *f = TFile::Open(fa);
+    TFile *f = TFile::Open(afname);
 
     TH2F *h0 = new TH2F("h0","Uncalibrated DSSSD Spectrum",MAX_CHANNELS,0,MAX_CHANNELS,4096,0,4095);
     TH1F *h2 = new TH1F("h2","Uncalibrated DSSSD Energy (Front)",4096,0,4095);
@@ -277,12 +280,39 @@ void dsssdcal(const char *fp, const char *fa, Bool_t odb = kTRUE, Bool_t json = 
 
 }
 
-void WriteJson(const char* filename, Double_t* slopes, Double_t* offsets)
+void WriteJson(Double_t* slope, Double_t* offset, const char* filename = "$DH/../calibration/dsssdcal.json")
 {
-	std::ofstream ofs(filename);
+	std::ofstream ofs(gSystem->ExpandPathName(filename));
 
-	ofs << "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n";
+    ofs << "\{\n";
+    ofs << "  \"/MIDAS version\" : \"2.1\",\n";
+    ofs << "  \"/MIDAS git revision\" : \"Fri Oct 13 11:11:03 2017 -0700 - 3dd7f52\",\n";
+    ofs << "  \"/filename\" : \"" << filename << "\",\n";
+    ofs << "  \"/ODB path\" : \"/dragon/dsssd/variables/adc\",\n\n";
 
+    ofs << "  \"channel/key\" : { \"type\" : 7, \"num_values\" : 32, \"access_mode\" : 7, \"last_written\" : 1507880655 },\n";
+    ofs << "  \"channel\" : [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 ],\n";
+    ofs << "  \"module/key\" : { \"type\" : 7, \"num_values\" : 32, \"access_mode\" : 7, \"last_written\" : 1507880655 },\n";
+    ofs << "  \"module\" : [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],\n";
+
+    ofs << "  \"slope/key\" : { \"type\" : 10, \"num_values\" : 32, \"access_mode\" : 7, \"last_written\" : 1508890161 },\n";
+    ofs << "  \"slope\" : [ ";
+    for(Int_t i = 0; i < MAX_CHANNELS; i++){
+        ofs << slope[i] << ", ";
+    }
+    ofs << "],\n";
+
+    ofs << "  \"offset/key\" : { \"type\" : 10, \"num_values\" : 32, \"access_mode\" : 7, \"last_written\" : 1508890161 },\n";
+    ofs << "  \"offset\" : [ ";
+    for(Int_t i = 0; i < MAX_CHANNELS; i++){
+        ofs << offset[i] << ", ";
+    }
+    ofs << "]\n";
+    ofs << "\}\n";
+
+    ofs.close();
+
+    cout << "ATTENTION: Current odb state saved to dsssdcal.json in ${DH}/../calibration/ !\n";
 }
 
 void WriteOdb(Double_t* gain, Double_t* offset, Bool_t json, Bool_t xml)
@@ -291,57 +321,57 @@ void WriteOdb(Double_t* gain, Double_t* offset, Bool_t json, Bool_t xml)
     for(Int_t i=0; i< MAX_CHANNELS; ++i) {
         gSystem->Exec(Form("odbedit -c \"set /dragon/dsssd/variables/adc/slope[%d] %.6g\"\n", i, gain[i]));
         gSystem->Exec(Form("odbedit -c \"set /dragon/dsssd/variables/adc/offset[%d] %.6g\"\n", i, -offset[i] / gain[i]) );
+        cout << "ATTENTION: Gains and offsets written to odb!\n";
     }
     // Save current odb state to xml file
     if(xml){
         gSystem->Exec("odbedit -d /dragon/dsssd/variables/adc -c 'save -x dsssdcal.xml'"); // save calibration as xml file in pwd
         gSystem->Exec("if [ ! -d $DH/../calibration ]; then mkdir -p $DH/../calibration; fi");
         gSystem->Exec("mv -f ./dsssdcal.xml ${DH}/../calibration/"); // move xml file to $DH/../calibration/
-        cout << "ATTENTION: Gains and offsets written to odb!\n";
         cout << "ATTENTION: Current odb state saved to dsssdcal.xml in ${DH}/../calibration/ !\n";
     }
     if(json){
         gSystem->Exec("odbedit -d /dragon/dsssd/variables/adc -c 'save -j dsssdcal.json'"); // save calibration as json file in pwd
         gSystem->Exec("if [ ! -d $DH/../calibration ]; then mkdir -p $DH/../calibration; fi");
         gSystem->Exec("mv -f ./dsssdcal.json ${DH}/../calibration/"); // move json file to $DH/../calibration/
-        cout << "ATTENTION: Gains and offsets written to odb!\n";
         cout << "ATTENTION: Current odb state saved to dsssdcal.json in ${DH}/../calibration/ !\n";
     }
 }
 
 
-void WriteXml(const char* filename, Double_t* slopes, Double_t* offsets)
+void WriteXml(Double_t* slopes, Double_t* offsets, const char* filename = "$DH/../calibration/dsssdcal.xml")
 {
-	std::ofstream ofs(filename);
+	std::ofstream ofs(gSystem->ExpandPathName(filename));
 
 	ofs << "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n";
-    ofs << "<odb root=\"/dragon/dsssd/variables/adc\" filename=\"dsssdcal.xml\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"/Users/dragon/packages/midas/odb.xsd\">\n";
+    ofs << "<odb root=\"/dragon/dsssd/variables/adc\" filename=\"" << filename << "\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"/Users/dragon/packages/midas/odb.xsd\">\n";
 
-    ofs << "<!-- DRAGON DSSSD calibration slopes and offsets -->\n";
-    ofs << "<!-- Copy and paste into the relevant section of XML ODB file -->\n";
-
-    ofs << "<keyarray name=\"channel\" type=\"INT\" num_values=\"32\">\n";
-	for(int i=0; i< 32; ++i) {
-		ofs << "            <value index=\"" << i << "\">" << i << "</value>\n";
+    ofs << "  <keyarray name=\"channel\" type=\"INT\" num_values=\"32\">\n";
+	for(int i=0; i < MAX_CHANNELS; ++i) {
+		ofs << "    <value index=\"" << i << "\">" << i << "</value>\n";
 	}
-	ofs << "          </keyarray>\n";
+	ofs << "  </keyarray>\n";
 
-    ofs << "<keyarray name=\"module\" type=\"INT\" num_values=\"32\">\n";
-	for(int i=0; i< 32; ++i) {
-		ofs << "            <value index=\"" << i << "\">1</value>\n";
+    ofs << "  <keyarray name=\"module\" type=\"INT\" num_values=\"32\">\n";
+	for(int i=0; i< MAX_CHANNELS; ++i) {
+		ofs << "    <value index=\"" << i << "\">1</value>\n";
 	}
-	ofs << "          </keyarray>\n";
+	ofs << "  </keyarray>\n";
 
-    ofs << "<keyarray name=\"slope\" type=\"DOUBLE\" num_values=\"32\">\n";
-	for(int i=0; i< 32; ++i) {
-		ofs << "            <value index=\"" << i << "\">" << slopes[i] << "</value>\n";
+    ofs << "  <keyarray name=\"slope\" type=\"DOUBLE\" num_values=\"32\">\n";
+	for(int i=0; i< MAX_CHANNELS; ++i) {
+		ofs << "    <value index=\"" << i << "\">" << slopes[i] << "</value>\n";
 	}
-	ofs << "          </keyarray>\n";
+	ofs << "  </keyarray>\n";
 
 	ofs << "          <keyarray name=\"offset\" type=\"DOUBLE\" num_values=\"32\">\n";
-	for(int i=0; i< 32; ++i) {
-		ofs << "            <value index=\"" << i << "\">" << offsets[i] << "</value>\n";
+	for(int i=0; i< MAX_CHANNELS; ++i) {
+		ofs << "    <value index=\"" << i << "\">" << offsets[i] << "</value>\n";
 	}
-	ofs << "          </keyarray>\n";
+	ofs << "  </keyarray>\n";
 	ofs << "</odb>\n";
+
+    ofs.close();
+
+    cout << "ATTENTION: Current odb state saved to dsssdcal.xml in ${DH}/../calibration/ !\n";
 }
