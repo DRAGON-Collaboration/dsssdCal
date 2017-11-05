@@ -20,7 +20,8 @@
 
 static const Int_t MAX_CHANNELS   = 32;
 static const Int_t Nalpha         = 3;
-static const Int_t Max_pulser     = 12;
+static const Int_t Max_pulser     = 13;
+static const Int_t Nbins          = 2048;
 static const Double_t sigma_f     = 3;
 static const Double_t thresh_f    = 0.25;
 static const Double_t sigma_b     = 5;
@@ -45,6 +46,7 @@ Double_t *pulser(const char *file, Int_t strip, Double_t sigma, Double_t thresh)
     TFile *f = TFile::Open(file);
     TTree *t3 = (TTree *)f->Get("t3");
 
+    Double_t offset = 0, inl = 0;
     Double_t *par = new Double_t[2];
 
     TH1F *h1 = new TH1F("h1", "h1", 960, 0, 3840); // cut out over/underflow
@@ -56,15 +58,13 @@ Double_t *pulser(const char *file, Int_t strip, Double_t sigma, Double_t thresh)
     cout << "Found " << nfound << " pulser peaks in strip " << strip << " spectrum.\n";
 
     if (nfound < 3){
-        cout << "WARNING: Insufficient number of pulser peaks to find offset for strip " << strip << "; skipping...\n";
-        offset = 0;
-        return offset;
-        h1->Delete();
+        cout << "WARNING: Insufficient number of pulser peaks to find offset for strip " << strip << "; skipping.\n";
+        offset = 0, inl = 0;
     }
 
     else{
         Float_t xsort;
-        Double_t inl, m, offset, pulser, x, y, temp;
+        Double_t m, pulser, x, y, temp;
         Float_t *xpeaks = s->GetPositionX();
         Int_t index[npoints];
         TMath::Sort(npoints,xpeaks,index,0);
@@ -81,7 +81,7 @@ Double_t *pulser(const char *file, Int_t strip, Double_t sigma, Double_t thresh)
         // new TCanvas();
         // g1->SetMarkerStyle(21);
         // g1->Draw("AP");
-        TFitResultPtr fit = g1->Fit("pol1","EFMNSV");
+        TFitResultPtr fit = g1->Fit("pol1","NSV"); // "EFMNSV"
         m      = fit->Value(1);
         offset = fit->Value(0);
         // cout << "Offset for strip " << strip << ":\n";
@@ -96,14 +96,15 @@ Double_t *pulser(const char *file, Int_t strip, Double_t sigma, Double_t thresh)
             if(temp > inl) inl = temp;
         }
 
-        par[0] = offset;
-        par[1] = 100*(1.0 - inl);
-
-        h1->Delete();
-        f->Close();
-
-        return par;
     }
+
+    par[0] = offset;
+    par[1] = 100*(1.0 - inl);
+
+    h1->Delete();
+    f->Close();
+
+    return par;
 
 }
 
@@ -114,7 +115,7 @@ Double_t *alpha(const char *file, Int_t strip, Double_t offset, Double_t range[2
 
     Double_t *par = new Double_t[2];
 
-    TH1F *h1 = new TH1F("h1", "h1", range[1] - range[0] + 1, range[0], range[1]);
+    TH1F *h1 = new TH1F("h1", "", range[1] - range[0] + 1, range[0], range[1]);
     // t3->Draw(Form("dsssd.ecal[%i]>>h1",strip),Form("dsssd.ecal[%i]>%f",strip,cut_channel),"goff");
 
     dragon::Tail* ptail = new dragon::Tail();
@@ -135,7 +136,7 @@ Double_t *alpha(const char *file, Int_t strip, Double_t offset, Double_t range[2
     }
     else if (nfound > 3){
         cout << "WARNING: Found too many alpha peaks in strip " << strip << " spectrum; skipping calibration.\n";
-        cout << "You may need to adjust threshold and/or sigma argument(s) for TSpectrum::Search() (in dsssdcal.C).\n";
+        cout << "You may need to adjust threshold and/or sigma argument(s) of TSpectrum::Search() (in dsssdcal.C).\n";
         par[0] = 0, par[1] = -1.99999;
     }
     else{
@@ -164,7 +165,7 @@ Double_t *alpha(const char *file, Int_t strip, Double_t offset, Double_t range[2
         // new TCanvas();
         // g1->SetMarkerStyle(21);
         // g1->Draw("AP");
-        TFitResultPtr fit = g1->Fit("pol1","EFMNSV");
+        TFitResultPtr fit = g1->Fit("pol1","NSV"); //"EFMNSV"
         par[0] = fit->Value(0), par[1] = fit->Value(1);
 
         // cout << "Energy calibration parameters for strip " << strip << ":\n";
@@ -233,8 +234,12 @@ void dsssdcal(const char *pfname, const char *afname,
     }
 
     if(odb) WriteOdb(gain, offset, json, xml);
-    else if(!(odb) && xml) WriteXml(gain, offset, xfname);
-    else if(!(odb) && json) WriteJson(gain, offset, jfname);
+    else if(xml && json) {
+        WriteXml(gain, offset, xfname);
+        WriteJson(gain, offset, jfname);
+    }
+    else if(xml) WriteXml(gain, offset, xfname);
+    else if(json) WriteJson(gain, offset, jfname);
 
     TFile *f = TFile::Open(afname);
 
@@ -246,7 +251,6 @@ void dsssdcal(const char *pfname, const char *afname,
     t3->Draw("dsssd.efront>>h2","","goff");
     t3->Draw("dsssd.eback>>h3","","goff");
 
-    TFile *f = TFile::Open(fa);
     // Fill calibrated summary spectrum
     TH2F *dsssd_cal = new TH2F("dsssd_cal","Calibrated DSSSD Spectrum",MAX_CHANNELS,0,MAX_CHANNELS,4096,0,4095);
     TH1F *front_cal = new TH1F("front_cal","Calibrated DSSSD Spectrum",4096,0,17.1);
