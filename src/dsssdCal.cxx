@@ -80,11 +80,13 @@ namespace dCal{
     std::string fOut;
     std::string fSigma;
     std::string fThresh;
-    bool fGrid;
     bool fDraw;
+    bool fGrid;
+    bool fJson;
     bool fOdb;
     bool fReset;
-    Options_t(): fDraw(false), fGrid(false), fOdb(false), fReset(false) {}
+    bool fXml;
+    Options_t(): fDraw(false), fGrid(false), fOdb(false), fReset(false), fJson(false), fXml(false) {}
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -107,19 +109,22 @@ namespace dCal{
     dCal::cerr << "\t<input file>     \t name of rootfile containing triple alpha source data;\n"
                << "\t                 \t if full path not given, default search path is $DH\n"
                << "\t                 \t environment variable (if it exists), otherwise search\n"
-               << "\t                 \t path is $PWD. Saves .xml file of DSSSD ODB variables to \n"
-               << "\t                 \t $DH/../calibration/<input filename>_dsssdCal.xml"
+               << "\t                 \t path is $PWD.\n"
                << "Options:\n"
                << "\t-o <output file> \t Specify output xml file\n"
                << "\t-s <sigma>       \t Specify sigma for TSpectrum::Search\n"
                << "\t-t <threshold>   \t Specify threshold for TSpectrum::Search\n"
-               << "\t--odb            \t Write DSSSD calibration variables to ODB"
                << "\t--draw           \t Draw calibrated spectra (not yet implemented)\n"
                << "\t--grid           \t Tengblad design DSSSD in use\n"
                << "\t--help           \t Show this help message\n"
+               << "\t--json           \t Save .json file of DSSSD ODB variables to \n"
+               << "\t                 \t $DH/../calibration/<input filename>_dsssdCal.json\n"
+               << "\t--odb            \t Write DSSSD calibration variables to ODB\n"
                << "\t--reset          \t Reset DSSSD ODB variables; if given with an input file\n"
                << "\t                 \t specified, requisite midas file is reanalyzed with reset\n"
                << "\t                 \t ODB variables (overwrites previous rootfile)\n"
+               << "\t--xml            \t Save .xml file of DSSSD ODB variables to: \n"
+               << "\t                 \t $DH/../calibration/<input filename>_dsssdCal.xml"
                << std::endl;
 	arg_return = true;
     return 0;
@@ -199,6 +204,9 @@ namespace dCal{
       else if (*iarg == "--help") { // Help message
         return help();
       }
+      else if (*iarg == "--json") { // write vars to .json
+        options->fJson = true;
+      }
       else if (*iarg == "--odb") { // write vars to ODB
         options->fOdb = true;
       }
@@ -207,6 +215,9 @@ namespace dCal{
           return reset(true, options);
         }
         return reset();
+      }
+      else if (*iarg == "--xml") { // write vars to .xml
+        options->fXml = true;
       }
       else if (*iarg == "-o") { // Output file
         if (++iarg == args.end()) return show_usage("output file not specified");
@@ -326,8 +337,6 @@ int main(int argc, char** argv)
     }
     else outdir = ".";
 
-    std::cout << outdir << std::endl;
-
     gSystem->PrependPathName(outdir.Data(), out);
   } // if (options.fOut.empty()) {
 
@@ -355,8 +364,12 @@ int main(int argc, char** argv)
   //   dcal.DrawFrontCal();
   // }
 
-  dcal.WriteXml(out.Data());
-
+  if(options.fXml) dcal.WriteXml(out.Data());
+  if(options.fJson){
+    out.Remove(out.Index(".xml"));
+    out.Append(".json");
+    dcal.WriteJson(out.Data());
+  }
   if(options.fOdb) dcal.WriteOdb(kFALSE, kFALSE);
 
   fa.Close();
