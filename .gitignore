@@ -1,0 +1,4 @@
+dsssdCal
+*.dSYM
+obj
+src/Dict.*
