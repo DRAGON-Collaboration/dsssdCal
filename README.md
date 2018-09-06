@@ -48,7 +48,7 @@ Options:
 ``` 
 
 
-## _Todo__
+## __Todo__
 
 - Implement a `TApplication` in order to draw calibrated spectra
 - write method (similar to `DsssdCalibrator::Run`) to handle pulser walk data

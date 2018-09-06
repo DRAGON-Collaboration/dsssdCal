@@ -28,9 +28,7 @@ CXX  += $(CXXFLAGS) $(AUXCFLAGS) -I$(ROOTSYS)/include
 
 LD   = $(CXX) $(LDFLAGS) $(ROOTGLIBS) $(LIBS) $(RPATH)
 
-all: $(OBJS) dsssdCal
-
-dsssdCal: $(EXE)
+all: $(OBJS) $(EXE)
 
 $(EXE): $(SRC)/dsssdCal.cxx $(OBJS) $(SRC)/Dict.cxx
 	$(LD) $(EXPLLINKLIBS) $< -o $@
