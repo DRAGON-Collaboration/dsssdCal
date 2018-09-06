@@ -112,13 +112,13 @@ namespace dCal{
                << "\t                 \t environment variable (if it exists), otherwise search\n"
                << "\t                 \t path is $PWD.\n"
                << "Options:\n"
-               << "\t-o <output file> \t Specify output xml file\n"
+               << "\t-o <output file> \t Specify output file\n"
                << "\t-s <sigma>       \t Specify sigma for TSpectrum::Search\n"
                << "\t-t <threshold>   \t Specify threshold for TSpectrum::Search\n"
                << "\t--draw           \t Draw calibrated spectra (not yet implemented)\n"
-               << "\t--full           \t Save full calibrated odb tree to .xml file as: \n"
-               << "\t                 \t $DH/../calibration/dsssdCal_full.xml"
-               << "\t                 \t (automatically switches --odb to true)"
+               << "\t--full           \t Save full calibrated odb tree to .xml file as:\n"
+               << "\t                 \t $DH/../calibration/dsssdCal_full.xml\n"
+               << "\t                 \t (automatically switches --odb to true)\n"
                << "\t--grid           \t Tengblad design DSSSD in use\n"
                << "\t--help           \t Show this help message\n"
                << "\t--json           \t Save .json file of DSSSD ODB variables to \n"
@@ -154,8 +154,10 @@ namespace dCal{
 
       // Get input file name
       TString in = options->fIn.c_str();
-      in.Remove(in.Index(".root"));
-      in.Append(".mid");
+      if(in.Contains(".root")){
+        in.Remove(in.Index(".root"));
+        in.Append(".mid");
+      }
       if(options->fIn.substr(0, 3) == "run"){
         TString indir = "$DH";
         Int_t gel = gErrorIgnoreLevel;
@@ -382,7 +384,7 @@ int main(int argc, char** argv)
     dcal.WriteOdb(kFALSE, kFALSE);
     if(options.fFull){
       system("odbedit -c \"save -x $DH/../calibration/dsssdCal_full.xml\"");
-      std::cout << "ATTENTION: Full ODB tree saved to $DH/../dsssdCal_full.xml\n";
+      std::cout << "Attention: Full ODB tree saved to $DH/../dsssdCal_full.xml\n";
     }
   }
 
