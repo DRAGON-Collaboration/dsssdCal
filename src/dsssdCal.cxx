@@ -360,7 +360,6 @@ int main(int argc, char** argv)
 
   // dcal.RunPulser();
   // dcal.RunAlpha();
-  // dcal.Run(835,500,3840,5,0.2,kTRUE);
   dcal.Run(835, 500, 3840, sigma, thresh, options.fGrid);
 
   dcal.PrintResults();
