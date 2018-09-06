@@ -5,7 +5,7 @@
 
 ## __Description__
 
-Simple program to calibrate DRAGON's DSSSD using triple alpha source data. Takes as input name of a rootfile containing triple alpha source data. To calibrate the DSSSD, and write the calibration variables to the MIDAS ODB, do the following:
+Simple program to calibrate DRAGON's DSSSD using triple alpha source data and calibration methods from the [DRAGON analyzer package](https://github.com/DRAGON-Collaboration/analyzer). Takes as input name of a rootfile containing triple alpha source data. To calibrate the DSSSD, and write the calibration variables to the MIDAS ODB, do the following:
 
 1. Run the following command from a ssh session on smaug:
    `dsssdCal --reset`
@@ -50,9 +50,9 @@ Options:
 
 ## _Todo__
 
-- Implement a TApplication in order to draw calibrated spectra
+- Implement a `TApplication` in order to draw calibrated spectra
 - write method (similar to `DsssdCalibrator::Run`) to handle pulser walk data
-- Implement GUI to handle manual selection of triple alpha peaks in each channel (similar to hvcalib)
+- Implement GUI to handle manual selection of triple alpha peaks in each channel (similar to `hvcalib`)
 - Add option hybrid detector (with mylar window of given thickness) and add necessary code to calculate energy loss in window.
 
 [//]: # Local Variables:
