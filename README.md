@@ -54,7 +54,3 @@ Options:
 - write method (similar to `DsssdCalibrator::Run`) to handle pulser walk data
 - Implement GUI to handle manual selection of triple alpha peaks in each channel (similar to `hvcalib`)
 - Add option hybrid detector (with mylar window of given thickness) and add necessary code to calculate energy loss in window.
-
-[//]: # Local Variables:
-[//]: # mode: gfm
-[//]: # End:
