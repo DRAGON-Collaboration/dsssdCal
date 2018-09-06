@@ -81,12 +81,13 @@ namespace dCal{
     std::string fSigma;
     std::string fThresh;
     bool fDraw;
+    bool fFull;
     bool fGrid;
     bool fJson;
     bool fOdb;
     bool fReset;
     bool fXml;
-    Options_t(): fDraw(false), fGrid(false), fOdb(false), fReset(false), fJson(false), fXml(false) {}
+    Options_t(): fDraw(false), fFull(false), fGrid(false), fOdb(false), fReset(false), fJson(false), fXml(false) {}
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -115,6 +116,9 @@ namespace dCal{
                << "\t-s <sigma>       \t Specify sigma for TSpectrum::Search\n"
                << "\t-t <threshold>   \t Specify threshold for TSpectrum::Search\n"
                << "\t--draw           \t Draw calibrated spectra (not yet implemented)\n"
+               << "\t--full           \t Save full calibrated odb tree to .xml file as: \n"
+               << "\t                 \t $DH/../calibration/dsssdCal_full.xml"
+               << "\t                 \t (automatically switches --odb to true)"
                << "\t--grid           \t Tengblad design DSSSD in use\n"
                << "\t--help           \t Show this help message\n"
                << "\t--json           \t Save .json file of DSSSD ODB variables to \n"
@@ -197,6 +201,10 @@ namespace dCal{
       }
       else if (*iarg == "--draw") { // Draw summary
         options->fDraw = true;
+      }
+      else if (*iarg == "--full") { // write full odb tree to .xml
+        options->fFull = true;
+        options->fOdb  = true;
       }
       else if (*iarg == "--grid") { // Gridded DSSSD
         options->fGrid = true;
@@ -370,7 +378,13 @@ int main(int argc, char** argv)
     out.Append(".json");
     dcal.WriteJson(out.Data());
   }
-  if(options.fOdb) dcal.WriteOdb(kFALSE, kFALSE);
+  if(options.fOdb){
+    dcal.WriteOdb(kFALSE, kFALSE);
+    if(options.fFull){
+      system("odbedit -c \"save -x $DH/../calibration/dsssdCal_full.xml\"");
+      std::cout << "ATTENTION: Full ODB tree saved to $DH/../dsssdCal_full.xml\n";
+    }
+  }
 
   fa.Close();
   return 0;
