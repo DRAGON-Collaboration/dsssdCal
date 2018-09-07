@@ -61,7 +61,6 @@ Options:
 
 ## __Todo__
 
-- Write calibration constant to ODB
 - Implement a `TApplication` in order to draw calibrated spectra
 - write method (similar to `DsssdCalibrator::Run`) to handle pulser walk data
 - Implement GUI to handle manual selection of triple alpha peaks in each channel (similar to `hvcalib`)
