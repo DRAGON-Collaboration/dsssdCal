@@ -29,8 +29,8 @@ This reanalyzes the MIDAS file and overwirites the existing rootfile. One may th
 
 ## __Usage__
 
-```
-usage: dsssdCal <input file> [-o <output file>] [-s <sigma>] [-t <threshold> ] [--grid] [--draw] [--help]
+``` 
+usage: dsssdCal <input file> [-o <output file>] [-s <sigma>] [-t <threshold> ] [--draw] [--grid] [--full] [--help] [--json] [--odb] [--reset] [--xml]
 Run 'dsssdCal --help' for more information.
 
 	<input file>     	 name of rootfile containing triple alpha source data;
@@ -55,7 +55,6 @@ Options:
 	                 	 ODB variables (overwrites previous rootfile)
 	--xml            	 Save .xml file of DSSSD ODB variables to: 
 	                 	 $DH/../calibration/<input filename>_dsssdCal.xml
-
 ``` 
 
 
