@@ -21,7 +21,7 @@ Simple program to calibrate DRAGON's DSSSD using triple alpha source data and ca
 
     `dsssdCal runxxxx.root -s <sigma> -t <threshold> --odb` (`--grid` if Tengblad DSSSD in use)
 
-If triple alpha data was collected with non-default calibration variables, then one may recover the default calibration variables (all slopes = 1 and all offsets = 0) by running 
+If triple alpha data was collected with a previously gainmatched DSSSD, then one may recover the default calibration variables (all slopes = 1 and all offsets = 0) by running 
 
    `dsssdCal runxxxx.root --reset`
 
