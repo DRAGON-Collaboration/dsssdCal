@@ -31,8 +31,8 @@
 namespace {
   bool arg_return = false;
   const char* const msg_use =
-	"usage: dsssdCal <input file> [-o <output file>] [-s <sigma>] [-t <threshold> ] "
-	"[--draw] [--grid] [--full] [--help] [--json] [--odb] [--reset] [--xml]\n";
+	"usage: dsssdCal <input file> [-o <output file>] [-s <sigma>] [-t <threshold> ] [--draw]\n"
+    "\t\t\t     [--grid] [--full] [--help] [--json] [--odb] [--reset] [--xml]\n";
 }
 #endif
 

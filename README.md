@@ -30,7 +30,8 @@ This reanalyzes the MIDAS file and overwirites the existing rootfile. One may th
 ## __Usage__
 
 ``` 
-usage: dsssdCal <input file> [-o <output file>] [-s <sigma>] [-t <threshold> ] [--draw] [--grid] [--full] [--help] [--json] [--odb] [--reset] [--xml]
+usage: dsssdCal <input file> [-o <output file>] [-s <sigma>] [-t <threshold> ] [--draw]
+			     [--grid] [--full] [--help] [--json] [--odb] [--reset] [--xml]
 Run 'dsssdCal --help' for more information.
 
 	<input file>     	 name of rootfile containing triple alpha source data;
